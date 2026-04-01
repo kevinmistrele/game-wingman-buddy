@@ -1,6 +1,7 @@
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import logo from "@/assets/logo.png";
-import { Users, MessageSquare, Crosshair, User } from "lucide-react";
+import { Users, MessageSquare, Crosshair, User, LogOut } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
 
 const navItems = [
   { label: "Home", path: "/", icon: Crosshair },
@@ -11,6 +12,13 @@ const navItems = [
 
 const Navbar = () => {
   const location = useLocation();
+  const navigate = useNavigate();
+  const { user, profile, signOut } = useAuth();
+
+  const handleSignOut = async () => {
+    await signOut();
+    navigate("/");
+  };
 
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 border-b border-border bg-background/80 backdrop-blur-xl">
@@ -42,9 +50,27 @@ const Navbar = () => {
           })}
         </div>
 
-        <button className="clip-angle-sm bg-primary px-5 py-2 font-display text-sm font-semibold tracking-wider text-primary-foreground transition-all hover:box-glow-primary">
-          SIGN IN
-        </button>
+        {user ? (
+          <div className="flex items-center gap-3">
+            <span className="font-display text-sm tracking-wide text-foreground hidden sm:inline">
+              {profile?.username ?? user.email?.split("@")[0]}
+            </span>
+            <button
+              onClick={handleSignOut}
+              className="clip-angle-sm bg-muted px-4 py-2 font-display text-sm font-semibold tracking-wider text-foreground transition-all hover:bg-destructive hover:text-destructive-foreground"
+            >
+              <LogOut className="h-4 w-4 sm:hidden" />
+              <span className="hidden sm:inline">SIGN OUT</span>
+            </button>
+          </div>
+        ) : (
+          <Link
+            to="/auth"
+            className="clip-angle-sm bg-primary px-5 py-2 font-display text-sm font-semibold tracking-wider text-primary-foreground transition-all hover:box-glow-primary"
+          >
+            SIGN IN
+          </Link>
+        )}
       </div>
     </nav>
   );
