@@ -14,6 +14,151 @@ export type Database = {
   }
   public: {
     Tables: {
+      conversations: {
+        Row: {
+          created_at: string
+          id: string
+          match_id: string | null
+          user1_id: string
+          user2_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          match_id?: string | null
+          user1_id: string
+          user2_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          match_id?: string | null
+          user1_id?: string
+          user2_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "conversations_match_id_fkey"
+            columns: ["match_id"]
+            isOneToOne: false
+            referencedRelation: "matches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      friendships: {
+        Row: {
+          created_at: string
+          id: string
+          user1_id: string
+          user2_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          user1_id: string
+          user2_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          user1_id?: string
+          user2_id?: string
+        }
+        Relationships: []
+      }
+      matches: {
+        Row: {
+          created_at: string
+          game: string
+          id: string
+          status: string
+          user1_id: string
+          user1_status: string
+          user2_id: string
+          user2_status: string
+        }
+        Insert: {
+          created_at?: string
+          game: string
+          id?: string
+          status?: string
+          user1_id: string
+          user1_status?: string
+          user2_id: string
+          user2_status?: string
+        }
+        Update: {
+          created_at?: string
+          game?: string
+          id?: string
+          status?: string
+          user1_id?: string
+          user1_status?: string
+          user2_id?: string
+          user2_status?: string
+        }
+        Relationships: []
+      }
+      matchmaking_queue: {
+        Row: {
+          created_at: string
+          game: string
+          id: string
+          region: string
+          status: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          game: string
+          id?: string
+          region?: string
+          status?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          game?: string
+          id?: string
+          region?: string
+          status?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      messages: {
+        Row: {
+          content: string
+          conversation_id: string
+          created_at: string
+          id: string
+          sender_id: string
+        }
+        Insert: {
+          content: string
+          conversation_id: string
+          created_at?: string
+          id?: string
+          sender_id: string
+        }
+        Update: {
+          content?: string
+          conversation_id?: string
+          created_at?: string
+          id?: string
+          sender_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "messages_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null
