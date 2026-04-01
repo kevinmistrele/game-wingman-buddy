@@ -12,6 +12,20 @@ const navItems = [
   { label: "Profile", path: "/profile", icon: User },
 ];
 
+const SoundToggle = () => {
+  const [enabled, setEnabled] = useState(isSoundEnabled());
+  const toggle = () => {
+    const next = !enabled;
+    setEnabled(next);
+    setSoundEnabled(next);
+  };
+  return (
+    <button onClick={toggle} className="p-2 text-muted-foreground hover:text-foreground transition-colors" title={enabled ? "Desativar sons" : "Ativar sons"}>
+      {enabled ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4" />}
+    </button>
+  );
+};
+
 const Navbar = () => {
   const location = useLocation();
   const navigate = useNavigate();
