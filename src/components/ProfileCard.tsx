@@ -253,7 +253,7 @@ const ProfileCard = () => {
                   <Select value={manualTier} onValueChange={(v) => { setManualTier(v); if (highTiers.includes(v)) setManualDivision("I"); }}>
                     <SelectTrigger className="bg-muted border-border flex-1"><SelectValue placeholder="Elo" /></SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">Sem Rank</SelectItem>
+                      <SelectItem value="none">Sem Rank</SelectItem>
                       {TIERS.map((t) => (
                         <SelectItem key={t} value={t}>{TIER_LABELS[t]}</SelectItem>
                       ))}
