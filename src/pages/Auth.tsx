@@ -42,11 +42,39 @@ const Auth = () => {
 
     try {
       if (isSignUp) {
+        // Check username uniqueness before signup
+        const { data: existingUser } = await supabase
+          .from("profiles")
+          .select("id")
+          .eq("username", username.trim())
+          .maybeSingle();
+
+        if (existingUser) {
+          toast.error("Este nome de usuário já está em uso. Escolha outro.");
+          setLoading(false);
+          return;
+        }
+
+        // Check Riot ID uniqueness
+        if (riotId) {
+          const { data: existingRiot } = await supabase
+            .from("profiles")
+            .select("id")
+            .eq("riot_id", riotId.trim())
+            .maybeSingle();
+
+          if (existingRiot) {
+            toast.error("Este Riot ID já está vinculado a outra conta.");
+            setLoading(false);
+            return;
+          }
+        }
+
         const { error } = await supabase.auth.signUp({
           email,
           password,
           options: {
-            data: { username, riot_id: riotId || undefined },
+            data: { username: username.trim(), riot_id: riotId.trim() || undefined },
             emailRedirectTo: window.location.origin,
           },
         });

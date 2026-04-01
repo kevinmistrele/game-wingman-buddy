@@ -4,6 +4,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
+import OnboardingModal from "@/components/OnboardingModal";
 import Index from "./pages/Index.tsx";
 import Matchmaking from "./pages/Matchmaking.tsx";
 import Chat from "./pages/Chat.tsx";
@@ -20,6 +21,20 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   return <>{children}</>;
 };
 
+const OnboardingGuard = () => {
+  const { user, needsOnboarding, completeOnboarding } = useAuth();
+  if (!needsOnboarding || !user) return null;
+
+  const defaultUsername = user.email?.split("@")[0] ?? "";
+  return (
+    <OnboardingModal
+      userId={user.id}
+      defaultUsername={defaultUsername}
+      onComplete={completeOnboarding}
+    />
+  );
+};
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
@@ -27,6 +42,7 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <AuthProvider>
+          <OnboardingGuard />
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/auth" element={<Auth />} />
