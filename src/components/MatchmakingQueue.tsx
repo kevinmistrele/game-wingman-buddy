@@ -2,8 +2,8 @@ import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Crosshair, X, Check, Clock, Users, AlertTriangle } from "lucide-react";
 import { useMatchmaking } from "@/hooks/useMatchmaking";
-import { QUEUE_MODES, TIER_LABELS, type QueueMode } from "@/lib/eloUtils";
-import RankBadge, { TIER_COLORS } from "@/components/RankBadge";
+import { QUEUE_MODES, type QueueMode } from "@/lib/eloUtils";
+import RankBadge from "@/components/RankBadge";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 
