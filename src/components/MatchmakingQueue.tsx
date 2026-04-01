@@ -2,8 +2,8 @@ import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Crosshair, X, Check, Clock, Users, AlertTriangle } from "lucide-react";
 import { useMatchmaking } from "@/hooks/useMatchmaking";
-import { QUEUE_MODES, TIER_LABELS, type QueueMode } from "@/lib/eloUtils";
-import RankBadge, { TIER_COLORS } from "@/components/RankBadge";
+import { QUEUE_MODES, type QueueMode } from "@/lib/eloUtils";
+import RankBadge from "@/components/RankBadge";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 
@@ -14,7 +14,7 @@ interface MatchmakingQueueProps {
 const MatchmakingQueue = ({ game }: MatchmakingQueueProps) => {
   const navigate = useNavigate();
   const {
-    status, matchedPlayer, myRank, queueCounts, otherAccepted,
+    status, matchedPlayer, myRank, myRankSource, queueCounts, otherAccepted,
     joinQueue, cancelQueue, respondToMatch,
   } = useMatchmaking(game);
 
@@ -75,6 +75,11 @@ const MatchmakingQueue = ({ game }: MatchmakingQueueProps) => {
                   winRate={myRank.winRate}
                   size="lg"
                 />
+                {myRankSource === "manual" && (
+                  <p className="text-[10px] text-muted-foreground/60 flex items-center justify-center gap-1 mt-1">
+                    <AlertTriangle className="h-3 w-3" /> Rank definido manualmente
+                  </p>
+                )}
               </motion.div>
             )}
 
@@ -226,13 +231,18 @@ const MatchmakingQueue = ({ game }: MatchmakingQueueProps) => {
                     {matchedPlayer?.profile?.username ?? "Jogador"}
                   </p>
                   {matchedRank ? (
-                    <RankBadge
-                      tier={matchedRank.tier}
-                      rank={matchedRank.rank}
-                      lp={matchedRank.lp}
-                      winRate={matchedRank.winRate}
-                      size="sm"
-                    />
+                    <>
+                      <RankBadge
+                        tier={matchedRank.tier}
+                        rank={matchedRank.rank}
+                        lp={matchedRank.lp}
+                        winRate={matchedRank.winRate}
+                        size="sm"
+                      />
+                      {matchedPlayer?.rankSource === "manual" && (
+                        <p className="text-[9px] text-muted-foreground/50">Rank manual</p>
+                      )}
+                    </>
                   ) : (
                     <p className="text-xs text-muted-foreground">Sem rank</p>
                   )}

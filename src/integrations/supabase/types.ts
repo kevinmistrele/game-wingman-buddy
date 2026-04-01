@@ -168,6 +168,9 @@ export type Database = {
           id: string
           preferred_game: Database["public"]["Enums"]["preferred_game"]
           rank: string | null
+          rank_division: string | null
+          rank_source: string | null
+          rank_tier: string | null
           riot_id: string | null
           updated_at: string
           user_id: string
@@ -181,6 +184,9 @@ export type Database = {
           id?: string
           preferred_game?: Database["public"]["Enums"]["preferred_game"]
           rank?: string | null
+          rank_division?: string | null
+          rank_source?: string | null
+          rank_tier?: string | null
           riot_id?: string | null
           updated_at?: string
           user_id: string
@@ -194,6 +200,9 @@ export type Database = {
           id?: string
           preferred_game?: Database["public"]["Enums"]["preferred_game"]
           rank?: string | null
+          rank_division?: string | null
+          rank_source?: string | null
+          rank_tier?: string | null
           riot_id?: string | null
           updated_at?: string
           user_id?: string
