@@ -35,6 +35,7 @@ interface ValorantMatch {
 
 interface ChampionMastery {
   championId: number;
+  championName: string;
   championLevel: number;
   championPoints: number;
   lastPlayTime: string;
