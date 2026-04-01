@@ -75,7 +75,7 @@ const MatchmakingQueue = ({ game }: MatchmakingQueueProps) => {
                 <p className="font-display text-xs tracking-widest text-muted-foreground mb-2">{t("mm_your_rank")}</p>
                 <RankBadge tier={myRank.tier} rank={myRank.rank} lp={myRank.lp} winRate={myRank.winRate} size="lg" />
                 {myRankSource === "manual" && (
-                  <p className="text-[10px] text-muted-foreground/60 flex items-center justify-center gap-1 mt-1">
+                  <p className="text-xs text-muted-foreground/60 flex items-center justify-center gap-1 mt-1">
                     <AlertTriangle className="h-3 w-3" /> {t("mm_manual_rank")}
                   </p>
                 )}
@@ -110,10 +110,10 @@ const MatchmakingQueue = ({ game }: MatchmakingQueueProps) => {
                       }`}
                     >
                       <span className="block">{mode.label}</span>
-                      <span className="block text-[10px] font-normal tracking-normal mt-0.5 opacity-70">
+                      <span className="block text-xs font-normal tracking-normal mt-0.5 opacity-70">
                         {mode.description}
                       </span>
-                      <span className="absolute top-2 right-3 flex items-center gap-1 text-[10px] font-normal opacity-60">
+                      <span className="absolute top-2 right-3 flex items-center gap-1 text-xs font-normal opacity-60">
                         <Users className="h-3 w-3" /> {count}
                       </span>
                     </button>
@@ -230,7 +230,7 @@ const MatchmakingQueue = ({ game }: MatchmakingQueueProps) => {
                     <>
                       <RankBadge tier={matchedRank.tier} rank={matchedRank.rank} lp={matchedRank.lp} winRate={matchedRank.winRate} size="sm" />
                       {matchedPlayer?.rankSource === "manual" && (
-                        <p className="text-[9px] text-muted-foreground/50">{t("mm_manual_rank_short")}</p>
+                        <p className="text-xs text-muted-foreground/50">{t("mm_manual_rank_short")}</p>
                       )}
                     </>
                   ) : (

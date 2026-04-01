@@ -13,6 +13,20 @@ export default {
       },
     },
     extend: {
+      fontSize: {
+        "xs": ["0.875rem", { lineHeight: "1.4" }],   // 14px min
+        "sm": ["1rem", { lineHeight: "1.5" }],        // 16px
+        "base": ["1rem", { lineHeight: "1.5" }],      // 16px
+        "md": ["1.125rem", { lineHeight: "1.5" }],    // 18px
+        "lg": ["1.5rem", { lineHeight: "1.3" }],      // 24px
+        "xl": ["2rem", { lineHeight: "1.2" }],        // 32px
+        "2xl": ["2rem", { lineHeight: "1.2" }],       // 32px
+        "3xl": ["2.25rem", { lineHeight: "1.2" }],
+        "4xl": ["2.75rem", { lineHeight: "1.1" }],
+        "5xl": ["3.5rem", { lineHeight: "1.1" }],
+        "6xl": ["4rem", { lineHeight: "1.05" }],
+        "7xl": ["5rem", { lineHeight: "1.05" }],
+      },
       fontFamily: {
         display: ["Rajdhani", "sans-serif"],
         body: ["Inter", "sans-serif"],

@@ -115,7 +115,7 @@ const OnboardingModal = ({ userId, defaultUsername, onComplete }: OnboardingModa
                 className={`pl-10 bg-muted border-border ${riotIdError ? "border-destructive" : ""}`} />
             </div>
             {riotIdError && <p className="text-xs text-destructive">{riotIdError}</p>}
-            <p className="text-[10px] text-muted-foreground/60">{t("onboarding_riot_id_format")}</p>
+            <p className="text-xs text-muted-foreground/60">{t("onboarding_riot_id_format")}</p>
           </div>
 
           <Button type="submit" disabled={loading} className="w-full clip-angle-sm font-display tracking-wider">

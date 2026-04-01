@@ -29,8 +29,8 @@ interface RankBadgeProps {
 }
 
 const sizeMap = {
-  sm: { icon: "h-6 w-6", text: "text-xs", detail: "text-[9px]" },
-  md: { icon: "h-8 w-8", text: "text-sm", detail: "text-[10px]" },
+  sm: { icon: "h-6 w-6", text: "text-xs", detail: "text-xs" },
+  md: { icon: "h-8 w-8", text: "text-sm", detail: "text-xs" },
   lg: { icon: "h-12 w-12", text: "text-lg", detail: "text-xs" },
 };
 

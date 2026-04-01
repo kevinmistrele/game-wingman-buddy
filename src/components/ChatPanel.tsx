@@ -145,7 +145,7 @@ const ChatPanel = ({ messages, sendMessage, activeConversation, otherUsername, o
                 }`}
               >
                 <p className="text-sm">{msg.content}</p>
-                <p className="mt-1 text-[10px] text-muted-foreground">
+                <p className="mt-1 text-xs text-muted-foreground">
                   {new Date(msg.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
                 </p>
               </div>

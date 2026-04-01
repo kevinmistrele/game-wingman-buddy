@@ -66,13 +66,13 @@ const MatchHistoryCard = ({ match, game }: MatchHistoryCardProps) => {
           <p className="font-display text-sm font-bold text-foreground">
             {lolMatch.kills}/{lolMatch.deaths}/{lolMatch.assists}
           </p>
-          <p className="text-[10px] text-muted-foreground font-display">KDA {kda}</p>
+          <p className="text-xs text-muted-foreground font-display">KDA {kda}</p>
         </div>
 
         {/* CS & Gold */}
         <div className="text-center hidden sm:block">
           <p className="font-display text-sm text-foreground">{lolMatch.cs}</p>
-          <p className="text-[10px] text-muted-foreground font-display">CS</p>
+          <p className="text-xs text-muted-foreground font-display">CS</p>
         </div>
 
         {/* Duration & Date */}
@@ -117,7 +117,7 @@ const MatchHistoryCard = ({ match, game }: MatchHistoryCardProps) => {
         <p className="font-display text-sm font-bold text-foreground">
           {valMatch.kills}/{valMatch.deaths}/{valMatch.assists}
         </p>
-        <p className="text-[10px] text-muted-foreground font-display">KDA {kda}</p>
+        <p className="text-xs text-muted-foreground font-display">KDA {kda}</p>
       </div>
 
       <div className="text-right text-xs text-muted-foreground">
