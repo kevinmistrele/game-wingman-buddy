@@ -54,6 +54,7 @@ const Navbar = () => {
 
         {user ? (
           <div className="flex items-center gap-3">
+            <SoundToggle />
             <span className="font-display text-sm tracking-wide text-foreground hidden sm:inline">
               {profile?.username ?? user.email?.split("@")[0]}
             </span>
