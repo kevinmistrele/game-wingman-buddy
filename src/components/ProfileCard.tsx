@@ -341,12 +341,9 @@ const ProfileCard = () => {
               </div>
             )}
 
-            <div className="mt-6 border-t border-border pt-5 flex items-center justify-between">
-              <button onClick={() => navigate("/settings")} className="flex items-center gap-2 text-xs text-muted-foreground hover:text-primary transition-colors">
-                <Settings className="h-3 w-3" /> {t("profile_settings")}
-              </button>
-              <button onClick={() => setShowDeleteModal(true)} className="flex items-center gap-2 text-xs text-destructive/70 hover:text-destructive transition-colors">
-                <Trash2 className="h-3 w-3" /> {t("profile_delete_account")}
+            <div className="mt-6 border-t border-border pt-5">
+              <button onClick={() => navigate("/settings")} className="w-full clip-angle-sm bg-muted hover:bg-accent px-5 py-3 font-display text-sm font-semibold tracking-wider text-foreground transition-all flex items-center justify-center gap-2">
+                <Settings className="h-5 w-5" /> {t("profile_settings")}
               </button>
             </div>
           </>
