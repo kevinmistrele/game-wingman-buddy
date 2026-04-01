@@ -98,15 +98,6 @@ const fetchRiotProfile = async (
 ): Promise<RiotProfileResponse> => {
   const { data: { session } } = await supabase.auth.getSession();
 
-  const res = await supabase.functions.invoke("riot-matches", {
-    method: "GET",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: null,
-  });
-
-  // Use fetch directly for GET with query params
   const projectUrl = import.meta.env.VITE_SUPABASE_URL;
   const apiKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 
