@@ -115,6 +115,7 @@ export const useMatchmaking = (game: "lol" | "valorant") => {
 
           if (match.status === "pending") {
             setStatus("found");
+            playMatchFoundSound();
             const otherUserId = match.user1_id === user.id ? match.user2_id : match.user1_id;
             const isUser1 = match.user1_id === user.id;
             const otherStatus = isUser1 ? match.user2_status : match.user1_status;
