@@ -1,13 +1,30 @@
 import { motion } from "framer-motion";
+import { Link } from "react-router-dom";
 import GameCard from "@/components/GameCard";
 import Navbar from "@/components/Navbar";
 import { useI18n } from "@/contexts/I18nContext";
+import { useAuth } from "@/contexts/AuthContext";
 import lolHero from "@/assets/lol-hero.jpg";
 import valorantHero from "@/assets/valorant-hero.jpg";
-import { Zap, Users, MessageSquare } from "lucide-react";
+import { Zap, Users, MessageSquare, UserPlus, Search, Handshake, Gamepad2, Shield, Cpu, MessagesSquare } from "lucide-react";
 
 const Index = () => {
   const { t } = useI18n();
+  const { user } = useAuth();
+
+  const steps = [
+    { icon: UserPlus, title: t("home_step_1_title"), desc: t("home_step_1_desc") },
+    { icon: Search, title: t("home_step_2_title"), desc: t("home_step_2_desc") },
+    { icon: Handshake, title: t("home_step_3_title"), desc: t("home_step_3_desc") },
+    { icon: Gamepad2, title: t("home_step_4_title"), desc: t("home_step_4_desc") },
+  ];
+
+  const highlights = [
+    { icon: Cpu, title: t("home_highlight_1_title"), desc: t("home_highlight_1_desc") },
+    { icon: Shield, title: t("home_highlight_2_title"), desc: t("home_highlight_2_desc") },
+    { icon: MessagesSquare, title: t("home_highlight_3_title"), desc: t("home_highlight_3_desc") },
+    { icon: MessageSquare, title: t("home_highlight_4_title"), desc: t("home_highlight_4_desc") },
+  ];
 
   return (
     <div className="min-h-screen bg-background">
@@ -60,6 +77,111 @@ const Index = () => {
               </div>
             ))}
           </motion.div>
+
+          {/* CTA */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.6, duration: 0.6 }}
+            className="mt-10"
+          >
+            {user ? (
+              <Link
+                to="/matchmaking"
+                className="clip-angle-sm inline-block bg-primary px-8 py-3 font-display text-sm font-semibold tracking-wider text-primary-foreground transition-all hover:box-glow-primary"
+              >
+                {t("home_cta")}
+              </Link>
+            ) : (
+              <Link
+                to="/auth"
+                className="clip-angle-sm inline-block bg-primary px-8 py-3 font-display text-sm font-semibold tracking-wider text-primary-foreground transition-all hover:box-glow-primary"
+              >
+                {t("home_cta_signin")}
+              </Link>
+            )}
+          </motion.div>
+        </div>
+      </section>
+
+      {/* About */}
+      <section className="container py-20 text-center">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+        >
+          <h2 className="font-display text-sm tracking-[0.3em] text-muted-foreground">
+            {t("home_about_title")}
+          </h2>
+          <p className="mx-auto mt-4 max-w-2xl text-lg text-foreground/80">
+            {t("home_about_desc")}
+          </p>
+        </motion.div>
+      </section>
+
+      {/* How it works */}
+      <section className="container py-16">
+        <motion.h2
+          initial={{ opacity: 0 }}
+          whileInView={{ opacity: 1 }}
+          viewport={{ once: true }}
+          className="text-center font-display text-sm tracking-[0.3em] text-muted-foreground mb-12"
+        >
+          {t("home_how_title")}
+        </motion.h2>
+        <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
+          {steps.map((step, i) => (
+            <motion.div
+              key={step.title}
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: i * 0.1 }}
+              className="clip-angle border border-border gradient-card p-6 text-center"
+            >
+              <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
+                <step.icon className="h-6 w-6 text-primary" />
+              </div>
+              <p className="font-display text-xs tracking-[0.2em] text-muted-foreground mb-1">
+                {String(i + 1).padStart(2, "0")}
+              </p>
+              <h3 className="font-display text-sm font-bold tracking-wider text-foreground">
+                {step.title}
+              </h3>
+              <p className="mt-2 text-xs text-muted-foreground">{step.desc}</p>
+            </motion.div>
+          ))}
+        </div>
+      </section>
+
+      {/* Highlights */}
+      <section className="container py-16">
+        <motion.h2
+          initial={{ opacity: 0 }}
+          whileInView={{ opacity: 1 }}
+          viewport={{ once: true }}
+          className="text-center font-display text-sm tracking-[0.3em] text-muted-foreground mb-12"
+        >
+          {t("home_highlights_title")}
+        </motion.h2>
+        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+          {highlights.map((h, i) => (
+            <motion.div
+              key={h.title}
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: i * 0.1 }}
+              className="border border-border bg-card/50 rounded-lg p-6 text-center"
+            >
+              <h.icon className="mx-auto h-8 w-8 text-primary/70 mb-3" />
+              <h3 className="font-display text-sm font-bold tracking-wider text-foreground">
+                {h.title}
+              </h3>
+              <p className="mt-2 text-xs text-muted-foreground">{h.desc}</p>
+            </motion.div>
+          ))}
         </div>
       </section>
 

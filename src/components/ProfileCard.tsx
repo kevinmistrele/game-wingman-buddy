@@ -1,13 +1,11 @@
 import { useEffect, useState, useRef } from "react";
 import { motion } from "framer-motion";
-import { Copy, Gamepad2, Shield, Swords, Edit2, Save, X, Camera, Trash2, Loader2, AlertTriangle, Settings } from "lucide-react";
+import { Copy, Gamepad2, Shield, Swords, Edit2, Save, X, Camera, Loader2, AlertTriangle, Settings } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useI18n } from "@/contexts/I18nContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { useRiotProfile } from "@/hooks/useRiotMatches";
@@ -21,7 +19,7 @@ const RIOT_ID_REGEX = /^.{3,16}#[A-Za-z0-9]{3,5}$/;
 
 const ProfileCard = () => {
   const navigate = useNavigate();
-  const { user, profile, refreshProfile, signOut } = useAuth();
+  const { user, profile, refreshProfile } = useAuth();
   const { t } = useI18n();
   const [editing, setEditing] = useState(false);
   const [username, setUsername] = useState("");
@@ -32,9 +30,6 @@ const ProfileCard = () => {
   const [manualDivision, setManualDivision] = useState("IV");
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
-  const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [deleting, setDeleting] = useState(false);
-  const [deleteConfirm, setDeleteConfirm] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const { data: riotData } = useRiotProfile("lol", profile?.riot_id, "br1", 1);
@@ -103,20 +98,6 @@ const ProfileCard = () => {
     finally { setUploading(false); }
   };
 
-  const confirmWord = t("delete_confirm_word");
-
-  const handleDeleteAccount = async () => {
-    if (deleteConfirm !== confirmWord) return;
-    setDeleting(true);
-    try {
-      const { error } = await supabase.rpc("delete_user_account");
-      if (error) throw error;
-      toast.success(t("profile_account_deleted"));
-      await signOut();
-      navigate("/auth");
-    } catch (err: any) { toast.error(err.message || t("profile_delete_error")); }
-    finally { setDeleting(false); }
-  };
 
   const handleSave = async () => {
     if (!profile) return;
@@ -174,7 +155,6 @@ const ProfileCard = () => {
   const displayEmail = user?.email ?? "";
 
   return (
-    <>
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -341,41 +321,14 @@ const ProfileCard = () => {
               </div>
             )}
 
-            <div className="mt-6 border-t border-border pt-5 flex items-center justify-between">
-              <button onClick={() => navigate("/settings")} className="flex items-center gap-2 text-xs text-muted-foreground hover:text-primary transition-colors">
-                <Settings className="h-3 w-3" /> {t("profile_settings")}
-              </button>
-              <button onClick={() => setShowDeleteModal(true)} className="flex items-center gap-2 text-xs text-destructive/70 hover:text-destructive transition-colors">
-                <Trash2 className="h-3 w-3" /> {t("profile_delete_account")}
+            <div className="mt-6 border-t border-border pt-5">
+              <button onClick={() => navigate("/settings")} className="w-full clip-angle-sm bg-muted hover:bg-accent px-5 py-3 font-display text-sm font-semibold tracking-wider text-foreground transition-all flex items-center justify-center gap-2">
+                <Settings className="h-5 w-5" /> {t("profile_settings")}
               </button>
             </div>
           </>
         )}
-      </motion.div>
-
-      <Dialog open={showDeleteModal} onOpenChange={setShowDeleteModal}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle className="text-destructive">{t("delete_title")}</DialogTitle>
-            <DialogDescription>{t("delete_desc")}</DialogDescription>
-          </DialogHeader>
-          <div className="space-y-3">
-            <p className="text-sm text-muted-foreground">
-              {t("delete_confirm_text").replace("{word}", "")}
-              <span className="font-bold text-foreground">{confirmWord}</span>
-            </p>
-            <Input value={deleteConfirm} onChange={(e) => setDeleteConfirm(e.target.value)} placeholder={confirmWord} className="bg-muted border-border" />
-          </div>
-          <DialogFooter>
-            <Button variant="ghost" onClick={() => { setShowDeleteModal(false); setDeleteConfirm(""); }}>{t("delete_cancel")}</Button>
-            <Button variant="destructive" disabled={deleteConfirm !== confirmWord || deleting} onClick={handleDeleteAccount}>
-              {deleting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-              {t("delete_btn")}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </>
+    </motion.div>
   );
 };
 
