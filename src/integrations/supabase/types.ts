@@ -17,6 +17,7 @@ export type Database = {
       conversations: {
         Row: {
           created_at: string
+          hidden_by: string[] | null
           id: string
           match_id: string | null
           user1_id: string
@@ -24,6 +25,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          hidden_by?: string[] | null
           id?: string
           match_id?: string | null
           user1_id: string
@@ -31,6 +33,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          hidden_by?: string[] | null
           id?: string
           match_id?: string | null
           user1_id?: string
