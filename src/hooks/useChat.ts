@@ -6,15 +6,22 @@ import type { Tables } from "@/integrations/supabase/types";
 
 type Message = Tables<"messages">;
 type Conversation = Tables<"conversations">;
+type Profile = Tables<"profiles">;
+type Friendship = Tables<"friendships">;
 
-interface ConversationWithProfile extends Conversation {
-  otherProfile: Tables<"profiles"> | null;
+export interface ConversationWithProfile extends Conversation {
+  otherProfile: Profile | null;
   lastMessage?: Message | null;
+}
+
+export interface FriendWithProfile extends Friendship {
+  profile: Profile | null;
 }
 
 export const useChat = () => {
   const { user } = useAuth();
   const [conversations, setConversations] = useState<ConversationWithProfile[]>([]);
+  const [friends, setFriends] = useState<FriendWithProfile[]>([]);
   const [activeConversation, setActiveConversation] = useState<string | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(true);
@@ -30,8 +37,14 @@ export const useChat = () => {
 
     if (!convos) { setLoading(false); return; }
 
+    // Filter out conversations hidden by this user
+    const visible = convos.filter((c: any) => {
+      const hiddenBy: string[] = c.hidden_by ?? [];
+      return !hiddenBy.includes(user.id);
+    });
+
     const enriched: ConversationWithProfile[] = [];
-    for (const c of convos) {
+    for (const c of visible) {
       const otherUserId = c.user1_id === user.id ? c.user2_id : c.user1_id;
       const { data: profile } = await supabase
         .from("profiles").select("*").eq("user_id", otherUserId).single();
@@ -45,7 +58,32 @@ export const useChat = () => {
     setLoading(false);
   }, [user]);
 
-  useEffect(() => { fetchConversations(); }, [fetchConversations]);
+  const fetchFriends = useCallback(async () => {
+    if (!user) return;
+
+    const { data: friendships } = await supabase
+      .from("friendships")
+      .select("*")
+      .or(`user1_id.eq.${user.id},user2_id.eq.${user.id}`)
+      .order("created_at", { ascending: false });
+
+    if (!friendships) return;
+
+    const enriched: FriendWithProfile[] = [];
+    for (const f of friendships) {
+      const otherUserId = f.user1_id === user.id ? f.user2_id : f.user1_id;
+      const { data: profile } = await supabase
+        .from("profiles").select("*").eq("user_id", otherUserId).single();
+      enriched.push({ ...f, profile });
+    }
+
+    setFriends(enriched);
+  }, [user]);
+
+  useEffect(() => {
+    fetchConversations();
+    fetchFriends();
+  }, [fetchConversations, fetchFriends]);
 
   useEffect(() => {
     if (!activeConversation) { setMessages([]); return; }
@@ -69,7 +107,6 @@ export const useChat = () => {
         const newMsg = payload.new as Message;
         setMessages((prev) => {
           if (prev.find((m) => m.id === newMsg.id)) return prev;
-          // Play sound for messages from others
           if (newMsg.sender_id !== user?.id) {
             playNewMessageSound();
           }
@@ -78,7 +115,7 @@ export const useChat = () => {
       })
       .subscribe();
     return () => { supabase.removeChannel(channel); };
-  }, [activeConversation]);
+  }, [activeConversation, user]);
 
   useEffect(() => {
     if (!user) return;
@@ -100,12 +137,27 @@ export const useChat = () => {
     });
   }, [user, activeConversation]);
 
+  // Soft-delete: only hide conversation for the current user
   const deleteConversation = useCallback(async (conversationId: string) => {
     if (!user) return;
-    // Delete all messages in the conversation first
-    await supabase.from("messages").delete().eq("conversation_id", conversationId);
-    // Delete the conversation
-    await supabase.from("conversations").delete().eq("id", conversationId);
+
+    // Get current hidden_by array
+    const { data: convo } = await supabase
+      .from("conversations")
+      .select("*")
+      .eq("id", conversationId)
+      .single();
+
+    if (!convo) return;
+
+    const currentHidden: string[] = (convo as any).hidden_by ?? [];
+    const newHidden = [...currentHidden, user.id];
+
+    await supabase
+      .from("conversations")
+      .update({ hidden_by: newHidden } as any)
+      .eq("id", conversationId);
+
     // Update local state
     setConversations((prev) => prev.filter((c) => c.id !== conversationId));
     if (activeConversation === conversationId) {
@@ -114,14 +166,65 @@ export const useChat = () => {
     }
   }, [user, activeConversation]);
 
+  const removeFriend = useCallback(async (friendshipId: string) => {
+    if (!user) return;
+    await supabase.from("friendships").delete().eq("id", friendshipId);
+    setFriends((prev) => prev.filter((f) => f.id !== friendshipId));
+  }, [user]);
+
+  // Start or open conversation with a friend
+  const openConversationWithFriend = useCallback(async (friendUserId: string) => {
+    if (!user) return;
+
+    // Check if conversation already exists (including hidden ones)
+    const [id1, id2] = [user.id, friendUserId].sort();
+
+    const { data: existing } = await supabase
+      .from("conversations")
+      .select("*")
+      .eq("user1_id", id1)
+      .eq("user2_id", id2)
+      .limit(1)
+      .single();
+
+    if (existing) {
+      // Unhide if hidden
+      const hiddenBy: string[] = (existing as any).hidden_by ?? [];
+      if (hiddenBy.includes(user.id)) {
+        const newHidden = hiddenBy.filter((id) => id !== user.id);
+        await supabase
+          .from("conversations")
+          .update({ hidden_by: newHidden } as any)
+          .eq("id", existing.id);
+      }
+      await fetchConversations();
+      setActiveConversation(existing.id);
+    } else {
+      // Create new conversation
+      const { data: newConvo } = await supabase
+        .from("conversations")
+        .insert({ user1_id: id1, user2_id: id2 })
+        .select()
+        .single();
+      if (newConvo) {
+        await fetchConversations();
+        setActiveConversation(newConvo.id);
+      }
+    }
+  }, [user, fetchConversations]);
+
   return {
     conversations,
+    friends,
     activeConversation,
     setActiveConversation,
     messages,
     sendMessage,
     loading,
     refreshConversations: fetchConversations,
+    refreshFriends: fetchFriends,
     deleteConversation,
+    removeFriend,
+    openConversationWithFriend,
   };
 };
