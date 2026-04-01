@@ -1,15 +1,16 @@
 import { useState } from "react";
 import Navbar from "@/components/Navbar";
 import MatchmakingQueue from "@/components/MatchmakingQueue";
+import { useI18n } from "@/contexts/I18nContext";
 
 const Matchmaking = () => {
+  const { t } = useI18n();
   const [selectedGame, setSelectedGame] = useState<"lol" | "valorant">("lol");
 
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
       <div className="container pt-24 pb-12">
-        {/* Game selector */}
         <div className="flex justify-center gap-4 mb-8">
           <button
             onClick={() => setSelectedGame("lol")}
@@ -19,7 +20,7 @@ const Matchmaking = () => {
                 : "border border-border text-muted-foreground hover:text-foreground hover:border-primary/50"
             }`}
           >
-            LEAGUE OF LEGENDS
+            {t("mm_lol")}
           </button>
           <button
             onClick={() => setSelectedGame("valorant")}
@@ -29,7 +30,7 @@ const Matchmaking = () => {
                 : "border border-border text-muted-foreground hover:text-foreground hover:border-secondary/50"
             }`}
           >
-            VALORANT
+            {t("mm_valorant")}
           </button>
         </div>
 

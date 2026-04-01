@@ -2,6 +2,7 @@ import { useEffect, useState, useRef } from "react";
 import { motion } from "framer-motion";
 import { Copy, Gamepad2, Shield, Swords, Edit2, Save, X, Camera, Trash2, Loader2, AlertTriangle, Settings } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
+import { useI18n } from "@/contexts/I18nContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -21,6 +22,7 @@ const RIOT_ID_REGEX = /^.{3,16}#[A-Za-z0-9]{3,5}$/;
 const ProfileCard = () => {
   const navigate = useNavigate();
   const { user, profile, refreshProfile, signOut } = useAuth();
+  const { t } = useI18n();
   const [editing, setEditing] = useState(false);
   const [username, setUsername] = useState("");
   const [preferredGame, setPreferredGame] = useState<PreferredGame>("both");
@@ -35,7 +37,6 @@ const ProfileCard = () => {
   const [deleteConfirm, setDeleteConfirm] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Fetch Riot rank
   const { data: riotData } = useRiotProfile("lol", profile?.riot_id, "br1", 1);
   const riotRank = riotData?.game === "lol" && riotData.summoner?.ranked
     ? riotData.summoner.ranked.find(r => r.queueType === "RANKED_SOLO_5x5")
@@ -44,17 +45,14 @@ const ProfileCard = () => {
     : null;
 
   const hasRiotRank = !!riotRank;
-  // Use profile's manual rank fields
   const profileManualTier = (profile as any)?.rank_tier as string | null;
   const profileManualDivision = (profile as any)?.rank_division as string | null;
   const profileRankSource = (profile as any)?.rank_source as string | null;
 
-  // If Riot API returns rank, auto-sync to profile
   useEffect(() => {
     if (!profile || !user || !riotRank) return;
     const currentSource = profileRankSource;
     const currentTier = profileManualTier;
-    // Only update if source needs changing to "riot" or tier changed
     if (currentSource !== "riot" || currentTier !== riotRank.tier) {
       supabase.from("profiles").update({
         rank_tier: riotRank.tier,
@@ -65,14 +63,12 @@ const ProfileCard = () => {
     }
   }, [riotRank, profile, user]);
 
-  // Effective rank (API priority > manual)
   const effectiveRank = hasRiotRank
     ? { tier: riotRank.tier, division: riotRank.rank, source: "riot" as const, lp: riotRank.lp, winRate: riotRank.winRate }
     : profileManualTier
       ? { tier: profileManualTier, division: profileManualDivision ?? "IV", source: "manual" as const, lp: undefined, winRate: undefined }
       : null;
 
-  // High tiers don't have divisions
   const highTiers = ["MASTER", "GRANDMASTER", "CHALLENGER"];
   const showDivision = manualTier && !highTiers.includes(manualTier);
 
@@ -90,8 +86,8 @@ const ProfileCard = () => {
   const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || !user) return;
-    if (!file.type.startsWith("image/")) { toast.error("Selecione um arquivo de imagem."); return; }
-    if (file.size > 2 * 1024 * 1024) { toast.error("Imagem muito grande (máx 2MB)."); return; }
+    if (!file.type.startsWith("image/")) { toast.error(t("profile_select_image")); return; }
+    if (file.size > 2 * 1024 * 1024) { toast.error(t("profile_image_too_large")); return; }
 
     setUploading(true);
     try {
@@ -101,29 +97,31 @@ const ProfileCard = () => {
       if (uploadError) throw uploadError;
       const { data: { publicUrl } } = supabase.storage.from("avatars").getPublicUrl(path);
       await supabase.from("profiles").update({ avatar_url: `${publicUrl}?t=${Date.now()}` }).eq("user_id", user.id);
-      toast.success("Foto atualizada!");
+      toast.success(t("profile_photo_updated"));
       await refreshProfile();
-    } catch (err: any) { toast.error(err.message || "Erro ao fazer upload."); }
+    } catch (err: any) { toast.error(err.message || t("profile_upload_error")); }
     finally { setUploading(false); }
   };
 
+  const confirmWord = t("delete_confirm_word");
+
   const handleDeleteAccount = async () => {
-    if (deleteConfirm !== "DELETAR") return;
+    if (deleteConfirm !== confirmWord) return;
     setDeleting(true);
     try {
       const { error } = await supabase.rpc("delete_user_account");
       if (error) throw error;
-      toast.success("Conta deletada com sucesso.");
+      toast.success(t("profile_account_deleted"));
       await signOut();
       navigate("/auth");
-    } catch (err: any) { toast.error(err.message || "Erro ao deletar conta."); }
+    } catch (err: any) { toast.error(err.message || t("profile_delete_error")); }
     finally { setDeleting(false); }
   };
 
   const handleSave = async () => {
     if (!profile) return;
     if (riotId && !RIOT_ID_REGEX.test(riotId)) {
-      toast.error("Riot ID inválido. Use o formato Nome#TAG (ex: Player#BR1)");
+      toast.error(t("profile_riot_id_invalid"));
       return;
     }
 
@@ -131,14 +129,13 @@ const ProfileCard = () => {
     try {
       if (username !== profile.username) {
         const { data: existing } = await supabase.from("profiles").select("id").eq("username", username.trim()).neq("user_id", profile.user_id).maybeSingle();
-        if (existing) { toast.error("Este nome de usuário já está em uso."); setSaving(false); return; }
+        if (existing) { toast.error(t("profile_username_taken")); setSaving(false); return; }
       }
       if (riotId && riotId !== profile.riot_id) {
         const { data: existingRiot } = await supabase.from("profiles").select("id").eq("riot_id", riotId.trim()).neq("user_id", profile.user_id).maybeSingle();
-        if (existingRiot) { toast.error("Este Riot ID já está vinculado a outra conta."); setSaving(false); return; }
+        if (existingRiot) { toast.error(t("profile_riot_id_taken")); setSaving(false); return; }
       }
 
-      // Build rank display string
       const tier = manualTier || null;
       const division = highTiers.includes(manualTier) ? "I" : (manualDivision || "IV");
       const rankDisplay = tier ? `${TIER_LABELS[tier] ?? tier} ${highTiers.includes(tier) ? "" : division}`.trim() : null;
@@ -150,7 +147,6 @@ const ProfileCard = () => {
         riot_id: riotId.trim() || null,
       };
 
-      // Only save manual rank if no Riot rank exists
       if (!hasRiotRank) {
         updatePayload.rank_tier = tier;
         updatePayload.rank_division = division;
@@ -160,13 +156,13 @@ const ProfileCard = () => {
 
       const { error } = await supabase.from("profiles").update(updatePayload).eq("user_id", profile.user_id);
       if (error) {
-        if (error.message.includes("profiles_username_unique")) toast.error("Este nome de usuário já está em uso.");
-        else if (error.message.includes("profiles_riot_id_unique")) toast.error("Este Riot ID já está vinculado a outra conta.");
-        else toast.error("Erro ao atualizar perfil.");
+        if (error.message.includes("profiles_username_unique")) toast.error(t("profile_username_taken"));
+        else if (error.message.includes("profiles_riot_id_unique")) toast.error(t("profile_riot_id_taken"));
+        else toast.error(t("profile_update_error"));
         return;
       }
 
-      toast.success("Perfil atualizado!");
+      toast.success(t("profile_updated"));
       setEditing(false);
       await refreshProfile();
     } finally { setSaving(false); }
@@ -207,18 +203,17 @@ const ProfileCard = () => {
               ) : (
                 <h2 className="font-display text-2xl font-bold tracking-wider text-foreground">{profile.username}</h2>
               )}
-              {/* Rank display */}
               {effectiveRank ? (
                 <div className="mt-1">
                   <RankBadge tier={effectiveRank.tier} rank={effectiveRank.division} lp={effectiveRank.lp} winRate={effectiveRank.winRate} size="sm" />
                   {effectiveRank.source === "manual" && (
                     <p className="text-[10px] text-muted-foreground/60 flex items-center gap-1 mt-0.5">
-                      <AlertTriangle className="h-3 w-3" /> Rank definido manualmente
+                      <AlertTriangle className="h-3 w-3" /> {t("profile_manual_rank")}
                     </p>
                   )}
                 </div>
               ) : (
-                <p className="text-sm text-muted-foreground">Sem Rank</p>
+                <p className="text-sm text-muted-foreground">{t("profile_no_rank")}</p>
               )}
               {displayEmail && <p className="text-xs text-muted-foreground/60 mt-0.5">{displayEmail}</p>}
             </div>
@@ -231,31 +226,30 @@ const ProfileCard = () => {
         {editing && (
           <div className="mt-4 space-y-3">
             <div>
-              <label className="font-display text-xs tracking-wider text-muted-foreground">JOGO PREFERIDO</label>
+              <label className="font-display text-xs tracking-wider text-muted-foreground">{t("profile_preferred_game")}</label>
               <Select value={preferredGame} onValueChange={(v) => setPreferredGame(v as PreferredGame)}>
                 <SelectTrigger className="bg-muted border-border"><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="lol">League of Legends</SelectItem>
                   <SelectItem value="valorant">Valorant</SelectItem>
-                  <SelectItem value="both">Ambos</SelectItem>
+                  <SelectItem value="both">{t("friend_game_both")}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
-            {/* Manual rank selector — only when no Riot rank */}
             {!hasRiotRank && (
               <div>
-                <label className="font-display text-xs tracking-wider text-muted-foreground">RANK (MANUAL)</label>
+                <label className="font-display text-xs tracking-wider text-muted-foreground">{t("profile_rank_manual_label")}</label>
                 <p className="text-[10px] text-muted-foreground/60 mb-1">
-                  {profile.riot_id ? "Nenhum rank encontrado via API. Selecione manualmente:" : "Selecione seu rank:"}
+                  {profile.riot_id ? t("profile_rank_manual_hint") : t("profile_rank_select_hint")}
                 </p>
                 <div className="flex gap-2">
                   <Select value={manualTier || "none"} onValueChange={(v) => { setManualTier(v === "none" ? "" : v); if (highTiers.includes(v)) setManualDivision("I"); }}>
                     <SelectTrigger className="bg-muted border-border flex-1"><SelectValue placeholder="Elo" /></SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="none">Sem Rank</SelectItem>
-                      {TIERS.map((t) => (
-                        <SelectItem key={t} value={t}>{TIER_LABELS[t]}</SelectItem>
+                      <SelectItem value="none">{t("profile_no_rank")}</SelectItem>
+                      {TIERS.map((tier) => (
+                        <SelectItem key={tier} value={tier}>{TIER_LABELS[tier]}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
@@ -276,7 +270,7 @@ const ProfileCard = () => {
             {hasRiotRank && (
               <div className="border border-primary/20 bg-primary/5 p-3 rounded">
                 <p className="text-xs text-muted-foreground flex items-center gap-1">
-                  ✓ Rank obtido automaticamente via Riot API
+                  {t("mm_riot_rank_auto")}
                 </p>
                 <RankBadge tier={riotRank!.tier} rank={riotRank!.rank} lp={riotRank!.lp} winRate={riotRank!.winRate} size="sm" />
               </div>
@@ -285,14 +279,14 @@ const ProfileCard = () => {
             <div>
               <label className="font-display text-xs tracking-wider text-muted-foreground">RIOT ID</label>
               <Input value={riotId} onChange={(e) => setRiotId(e.target.value)} placeholder="Player#BR1" className="bg-muted border-border" />
-              <p className="text-[10px] text-muted-foreground/60 mt-1">Formato: Nome#TAG (3-5 caracteres após #)</p>
+              <p className="text-[10px] text-muted-foreground/60 mt-1">{t("profile_riot_id_format")}</p>
             </div>
             <div>
               <label className="font-display text-xs tracking-wider text-muted-foreground">DISCORD</label>
               <Input value={discordUsername} onChange={(e) => setDiscordUsername(e.target.value)} placeholder="Usuario#1234" className="bg-muted border-border" />
             </div>
             <button onClick={() => { setEditing(false); if (profile) { setUsername(profile.username); setRiotId(profile.riot_id ?? ""); } }} className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1">
-              <X className="h-3 w-3" /> Cancelar
+              <X className="h-3 w-3" /> {t("profile_cancel")}
             </button>
           </div>
         )}
@@ -301,9 +295,9 @@ const ProfileCard = () => {
           <>
             <div className="mt-6 grid grid-cols-3 gap-4">
               {[
-                { label: "PARTIDAS", value: "0", icon: Swords },
-                { label: "VITÓRIAS", value: "—", icon: Shield },
-                { label: "AMIGOS", value: "0", icon: Gamepad2 },
+                { label: t("profile_matches"), value: "0", icon: Swords },
+                { label: t("profile_wins"), value: "—", icon: Shield },
+                { label: t("profile_friends_count"), value: "0", icon: Gamepad2 },
               ].map((stat) => (
                 <div key={stat.label} className="text-center">
                   <stat.icon className="mx-auto h-5 w-5 text-primary/60" />
@@ -323,7 +317,7 @@ const ProfileCard = () => {
                       <p className="text-sm font-medium text-foreground">{profile.discord_username}</p>
                     </div>
                   </div>
-                  <button onClick={() => { navigator.clipboard.writeText(profile.discord_username!); toast.success("Copiado!"); }} className="p-2 text-muted-foreground transition-colors hover:text-primary">
+                  <button onClick={() => { navigator.clipboard.writeText(profile.discord_username!); toast.success(t("profile_copied")); }} className="p-2 text-muted-foreground transition-colors hover:text-primary">
                     <Copy className="h-4 w-4" />
                   </button>
                 </div>
@@ -340,7 +334,7 @@ const ProfileCard = () => {
                       <p className="text-sm font-medium text-foreground">{profile.riot_id}</p>
                     </div>
                   </div>
-                  <button onClick={() => { navigator.clipboard.writeText(profile.riot_id!); toast.success("Copiado!"); }} className="p-2 text-muted-foreground transition-colors hover:text-primary">
+                  <button onClick={() => { navigator.clipboard.writeText(profile.riot_id!); toast.success(t("profile_copied")); }} className="p-2 text-muted-foreground transition-colors hover:text-primary">
                     <Copy className="h-4 w-4" />
                   </button>
                 </div>
@@ -349,10 +343,10 @@ const ProfileCard = () => {
 
             <div className="mt-6 border-t border-border pt-5 flex items-center justify-between">
               <button onClick={() => navigate("/settings")} className="flex items-center gap-2 text-xs text-muted-foreground hover:text-primary transition-colors">
-                <Settings className="h-3 w-3" /> Configurações
+                <Settings className="h-3 w-3" /> {t("profile_settings")}
               </button>
               <button onClick={() => setShowDeleteModal(true)} className="flex items-center gap-2 text-xs text-destructive/70 hover:text-destructive transition-colors">
-                <Trash2 className="h-3 w-3" /> Excluir conta
+                <Trash2 className="h-3 w-3" /> {t("profile_delete_account")}
               </button>
             </div>
           </>
@@ -362,20 +356,21 @@ const ProfileCard = () => {
       <Dialog open={showDeleteModal} onOpenChange={setShowDeleteModal}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle className="text-destructive">Excluir Conta</DialogTitle>
-            <DialogDescription>Esta ação é irreversível. Todos os seus dados serão permanentemente deletados.</DialogDescription>
+            <DialogTitle className="text-destructive">{t("delete_title")}</DialogTitle>
+            <DialogDescription>{t("delete_desc")}</DialogDescription>
           </DialogHeader>
           <div className="space-y-3">
             <p className="text-sm text-muted-foreground">
-              Digite <span className="font-bold text-foreground">DELETAR</span> para confirmar:
+              {t("delete_confirm_text").replace("{word}", "")}
+              <span className="font-bold text-foreground">{confirmWord}</span>
             </p>
-            <Input value={deleteConfirm} onChange={(e) => setDeleteConfirm(e.target.value)} placeholder="DELETAR" className="bg-muted border-border" />
+            <Input value={deleteConfirm} onChange={(e) => setDeleteConfirm(e.target.value)} placeholder={confirmWord} className="bg-muted border-border" />
           </div>
           <DialogFooter>
-            <Button variant="ghost" onClick={() => { setShowDeleteModal(false); setDeleteConfirm(""); }}>Cancelar</Button>
-            <Button variant="destructive" disabled={deleteConfirm !== "DELETAR" || deleting} onClick={handleDeleteAccount}>
+            <Button variant="ghost" onClick={() => { setShowDeleteModal(false); setDeleteConfirm(""); }}>{t("delete_cancel")}</Button>
+            <Button variant="destructive" disabled={deleteConfirm !== confirmWord || deleting} onClick={handleDeleteAccount}>
               {deleting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-              Excluir permanentemente
+              {t("delete_btn")}
             </Button>
           </DialogFooter>
         </DialogContent>

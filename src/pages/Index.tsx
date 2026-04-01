@@ -1,11 +1,14 @@
 import { motion } from "framer-motion";
 import GameCard from "@/components/GameCard";
 import Navbar from "@/components/Navbar";
+import { useI18n } from "@/contexts/I18nContext";
 import lolHero from "@/assets/lol-hero.jpg";
 import valorantHero from "@/assets/valorant-hero.jpg";
 import { Zap, Users, MessageSquare } from "lucide-react";
 
 const Index = () => {
+  const { t } = useI18n();
+
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
@@ -13,7 +16,6 @@ const Index = () => {
       {/* Hero */}
       <section className="relative flex min-h-[70vh] items-center justify-center overflow-hidden pt-16">
         <div className="absolute inset-0 gradient-hero" />
-        {/* Grid overlay */}
         <div
           className="absolute inset-0 opacity-5"
           style={{
@@ -30,15 +32,14 @@ const Index = () => {
             transition={{ duration: 0.8 }}
           >
             <h1 className="font-display text-5xl font-bold tracking-wider text-foreground md:text-7xl">
-              FIND YOUR
-              <span className="block text-primary text-glow-primary">NEXT TEAMMATE</span>
+              {t("home_title_1")}
+              <span className="block text-primary text-glow-primary">{t("home_title_2")}</span>
             </h1>
             <p className="mx-auto mt-4 max-w-lg text-muted-foreground">
-              Connect with players who match your playstyle. Queue up, get matched, and dominate together.
+              {t("home_subtitle")}
             </p>
           </motion.div>
 
-          {/* Stats bar */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -46,9 +47,9 @@ const Index = () => {
             className="mx-auto mt-10 flex max-w-md items-center justify-center gap-8"
           >
             {[
-              { icon: Users, value: "2.4K", label: "Online" },
-              { icon: Zap, value: "< 30s", label: "Avg Queue" },
-              { icon: MessageSquare, value: "12K", label: "Matches Today" },
+              { icon: Users, value: "2.4K", label: t("home_online") },
+              { icon: Zap, value: "< 30s", label: t("home_avg_queue") },
+              { icon: MessageSquare, value: "12K", label: t("home_matches_today") },
             ].map((stat) => (
               <div key={stat.label} className="text-center">
                 <stat.icon className="mx-auto h-5 w-5 text-primary/60" />
@@ -70,20 +71,20 @@ const Index = () => {
           viewport={{ once: true }}
           className="text-center font-display text-sm tracking-[0.3em] text-muted-foreground"
         >
-          SELECT YOUR GAME
+          {t("home_select_game")}
         </motion.h2>
         <div className="mt-8 grid gap-6 md:grid-cols-2">
           <GameCard
-            title="LEAGUE OF LEGENDS"
+            title={t("mm_lol")}
             image={lolHero}
             accentClass="primary"
-            description="Find your duo partner. Climb the ranks together."
+            description={t("home_lol_desc")}
           />
           <GameCard
-            title="VALORANT"
+            title={t("mm_valorant")}
             image={valorantHero}
             accentClass="secondary"
-            description="Match with agents who complement your playstyle."
+            description={t("home_val_desc")}
           />
         </div>
       </section>

@@ -1,10 +1,11 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Settings, Globe, Palette, Trash2, Download, Loader2, ArrowLeft } from "lucide-react";
+import { Settings, Globe, Palette, Trash2, Download, Loader2, ArrowLeft, Volume2, VolumeX } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import { useAuth } from "@/contexts/AuthContext";
 import { useI18n } from "@/contexts/I18nContext";
 import { useTheme } from "@/contexts/ThemeContext";
+import { isSoundEnabled, setSoundEnabled } from "@/lib/soundUtils";
 import { supabase } from "@/integrations/supabase/client";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -22,8 +23,15 @@ const SettingsPage = () => {
   const [deleteConfirm, setDeleteConfirm] = useState("");
   const [deleting, setDeleting] = useState(false);
   const [downloading, setDownloading] = useState(false);
+  const [soundOn, setSoundOn] = useState(isSoundEnabled());
 
   const confirmWord = t("delete_confirm_word");
+
+  const handleToggleSound = () => {
+    const next = !soundOn;
+    setSoundOn(next);
+    setSoundEnabled(next);
+  };
 
   const handleDeleteAccount = async () => {
     if (deleteConfirm !== confirmWord || !user) return;
@@ -34,7 +42,7 @@ const SettingsPage = () => {
       await signOut();
       navigate("/");
     } catch {
-      toast.error("Erro ao excluir conta");
+      toast.error(t("settings_delete_error"));
     } finally {
       setDeleting(false);
     }
@@ -70,9 +78,9 @@ const SettingsPage = () => {
       a.download = `matchgaming-data-${new Date().toISOString().split("T")[0]}.json`;
       a.click();
       URL.revokeObjectURL(url);
-      toast.success(locale === "pt-BR" ? "Dados exportados com sucesso!" : "Data exported successfully!");
+      toast.success(t("settings_download_success"));
     } catch {
-      toast.error(locale === "pt-BR" ? "Erro ao exportar dados" : "Error exporting data");
+      toast.error(t("settings_download_error"));
     } finally {
       setDownloading(false);
     }
@@ -131,7 +139,7 @@ const SettingsPage = () => {
             </div>
 
             {/* Theme */}
-            <div className="px-5 py-4">
+            <div className="px-5 py-4 border-b border-border/50">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <Palette className="h-5 w-5 text-primary/70" />
@@ -155,6 +163,29 @@ const SettingsPage = () => {
                     </button>
                   ))}
                 </div>
+              </div>
+            </div>
+
+            {/* Sound */}
+            <div className="px-5 py-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  {soundOn ? <Volume2 className="h-5 w-5 text-primary/70" /> : <VolumeX className="h-5 w-5 text-primary/70" />}
+                  <div>
+                    <p className="text-sm font-medium text-foreground">{t("settings_sound")}</p>
+                    <p className="text-xs text-muted-foreground">{t("settings_sound_desc")}</p>
+                  </div>
+                </div>
+                <button
+                  onClick={handleToggleSound}
+                  className={`clip-angle-sm px-4 py-2 font-display text-xs tracking-wider transition-all ${
+                    soundOn
+                      ? "bg-primary text-primary-foreground"
+                      : "border border-border text-muted-foreground hover:text-foreground hover:border-primary/50"
+                  }`}
+                >
+                  {soundOn ? "ON" : "OFF"}
+                </button>
               </div>
             </div>
           </section>
