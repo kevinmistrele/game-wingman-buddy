@@ -19,7 +19,7 @@ const RIOT_ID_REGEX = /^.{3,16}#[A-Za-z0-9]{3,5}$/;
 
 const ProfileCard = () => {
   const navigate = useNavigate();
-  const { user, profile, refreshProfile, signOut } = useAuth();
+  const { user, profile, refreshProfile } = useAuth();
   const { t } = useI18n();
   const [editing, setEditing] = useState(false);
   const [username, setUsername] = useState("");
