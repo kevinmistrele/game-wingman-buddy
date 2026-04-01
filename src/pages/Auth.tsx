@@ -37,7 +37,11 @@ const Auth = () => {
 
   const handleEmailAuth = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (isSignUp && riotId && !validateRiotId(riotId)) return;
+    if (isSignUp && !validateRiotId(riotId)) return;
+    if (isSignUp && !riotId.trim()) {
+      toast.error("Riot ID é obrigatório.");
+      return;
+    }
     setLoading(true);
 
     try {
