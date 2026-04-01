@@ -231,13 +231,18 @@ const MatchmakingQueue = ({ game }: MatchmakingQueueProps) => {
                     {matchedPlayer?.profile?.username ?? "Jogador"}
                   </p>
                   {matchedRank ? (
-                    <RankBadge
-                      tier={matchedRank.tier}
-                      rank={matchedRank.rank}
-                      lp={matchedRank.lp}
-                      winRate={matchedRank.winRate}
-                      size="sm"
-                    />
+                    <>
+                      <RankBadge
+                        tier={matchedRank.tier}
+                        rank={matchedRank.rank}
+                        lp={matchedRank.lp}
+                        winRate={matchedRank.winRate}
+                        size="sm"
+                      />
+                      {matchedPlayer?.rankSource === "manual" && (
+                        <p className="text-[9px] text-muted-foreground/50">Rank manual</p>
+                      )}
+                    </>
                   ) : (
                     <p className="text-xs text-muted-foreground">Sem rank</p>
                   )}
