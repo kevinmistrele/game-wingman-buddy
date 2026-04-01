@@ -3,16 +3,11 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import logo from "@/assets/logo.png";
 import { Users, MessageSquare, Crosshair, User, LogOut, Volume2, VolumeX } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
+import { useI18n } from "@/contexts/I18nContext";
 import { isSoundEnabled, setSoundEnabled } from "@/lib/soundUtils";
 
-const navItems = [
-  { label: "Home", path: "/", icon: Crosshair },
-  { label: "Matchmaking", path: "/matchmaking", icon: Users },
-  { label: "Chat", path: "/chat", icon: MessageSquare },
-  { label: "Profile", path: "/profile", icon: User },
-];
-
 const SoundToggle = () => {
+  const { t } = useI18n();
   const [enabled, setEnabled] = useState(isSoundEnabled());
   const toggle = () => {
     const next = !enabled;
@@ -20,7 +15,7 @@ const SoundToggle = () => {
     setSoundEnabled(next);
   };
   return (
-    <button onClick={toggle} className="p-2 text-muted-foreground hover:text-foreground transition-colors" title={enabled ? "Desativar sons" : "Ativar sons"}>
+    <button onClick={toggle} className="p-2 text-muted-foreground hover:text-foreground transition-colors" title={enabled ? t("sound_disable") : t("sound_enable")}>
       {enabled ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4" />}
     </button>
   );
@@ -30,6 +25,14 @@ const Navbar = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { user, profile, signOut } = useAuth();
+  const { t } = useI18n();
+
+  const navItems = [
+    { label: t("nav_home"), path: "/", icon: Crosshair },
+    { label: t("nav_matchmaking"), path: "/matchmaking", icon: Users },
+    { label: t("nav_chat"), path: "/chat", icon: MessageSquare },
+    { label: t("nav_profile"), path: "/profile", icon: User },
+  ];
 
   const handleSignOut = async () => {
     await signOut();
@@ -77,7 +80,7 @@ const Navbar = () => {
               className="clip-angle-sm bg-muted px-4 py-2 font-display text-sm font-semibold tracking-wider text-foreground transition-all hover:bg-destructive hover:text-destructive-foreground"
             >
               <LogOut className="h-4 w-4 sm:hidden" />
-              <span className="hidden sm:inline">SIGN OUT</span>
+              <span className="hidden sm:inline">{t("nav_signout")}</span>
             </button>
           </div>
         ) : (
@@ -85,7 +88,7 @@ const Navbar = () => {
             to="/auth"
             className="clip-angle-sm bg-primary px-5 py-2 font-display text-sm font-semibold tracking-wider text-primary-foreground transition-all hover:box-glow-primary"
           >
-            SIGN IN
+            {t("nav_signin")}
           </Link>
         )}
       </div>
