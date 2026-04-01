@@ -1,39 +1,53 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Crosshair, X, Check, Clock } from "lucide-react";
+import { useMatchmaking } from "@/hooks/useMatchmaking";
+import { toast } from "sonner";
+import { useNavigate } from "react-router-dom";
 
-type QueueState = "idle" | "searching" | "found";
+interface MatchmakingQueueProps {
+  game: "lol" | "valorant";
+}
 
-const MatchmakingQueue = () => {
-  const [state, setState] = useState<QueueState>("idle");
+const MatchmakingQueue = ({ game }: MatchmakingQueueProps) => {
+  const navigate = useNavigate();
+  const { status, matchedProfile, joinQueue, cancelQueue, respondToMatch } = useMatchmaking(game);
   const [timer, setTimer] = useState(0);
 
-  const startQueue = () => {
-    setState("searching");
-    setTimer(0);
-    const interval = setInterval(() => {
-      setTimer((prev) => prev + 1);
-    }, 1000);
+  useEffect(() => {
+    if (status !== "searching") {
+      setTimer(0);
+      return;
+    }
+    const interval = setInterval(() => setTimer((p) => p + 1), 1000);
+    return () => clearInterval(interval);
+  }, [status]);
 
-    // Simulate match found after 5 seconds
-    setTimeout(() => {
-      clearInterval(interval);
-      setState("found");
-    }, 5000);
+  const handleStart = async () => {
+    try {
+      await joinQueue();
+    } catch (e: any) {
+      toast.error(e.message || "Failed to join queue");
+    }
   };
 
-  const cancelQueue = () => {
-    setState("idle");
-    setTimer(0);
+  const handleRespond = async (accepted: boolean) => {
+    await respondToMatch(accepted);
+    if (accepted) {
+      toast.success("Match accepted! Opening chat...");
+      setTimeout(() => navigate("/chat"), 1500);
+    }
   };
 
   const formatTime = (s: number) =>
     `${Math.floor(s / 60)}:${(s % 60).toString().padStart(2, "0")}`;
 
+  const initials = matchedProfile?.username?.slice(0, 2).toUpperCase() ?? "??";
+
   return (
     <div className="flex min-h-[60vh] flex-col items-center justify-center">
       <AnimatePresence mode="wait">
-        {state === "idle" && (
+        {status === "idle" && (
           <motion.div
             key="idle"
             initial={{ opacity: 0, scale: 0.9 }}
@@ -51,11 +65,11 @@ const MatchmakingQueue = () => {
                 READY TO MATCH
               </h2>
               <p className="mt-2 text-muted-foreground">
-                Find your next teammate
+                {game === "lol" ? "League of Legends" : "Valorant"} queue
               </p>
             </div>
             <button
-              onClick={startQueue}
+              onClick={handleStart}
               className="clip-angle bg-primary px-10 py-4 font-display text-lg font-bold tracking-widest text-primary-foreground transition-all hover:box-glow-primary"
             >
               FIND MATCH
@@ -63,7 +77,7 @@ const MatchmakingQueue = () => {
           </motion.div>
         )}
 
-        {state === "searching" && (
+        {status === "searching" && (
           <motion.div
             key="searching"
             initial={{ opacity: 0, scale: 0.9 }}
@@ -80,7 +94,6 @@ const MatchmakingQueue = () => {
               <div className="absolute inset-0 flex items-center justify-center">
                 <Clock className="h-8 w-8 text-primary animate-pulse-glow" />
               </div>
-              {/* Ripple rings */}
               <motion.div
                 animate={{ scale: [1, 1.8], opacity: [0.3, 0] }}
                 transition={{ duration: 2, repeat: Infinity }}
@@ -105,7 +118,7 @@ const MatchmakingQueue = () => {
           </motion.div>
         )}
 
-        {state === "found" && (
+        {status === "found" && (
           <motion.div
             key="found"
             initial={{ opacity: 0, scale: 0.8 }}
@@ -125,11 +138,8 @@ const MatchmakingQueue = () => {
               <h2 className="font-display text-3xl font-bold tracking-wider text-primary text-glow-primary">
                 MATCH FOUND
               </h2>
-              <p className="mt-2 text-muted-foreground">
-                A player wants to connect!
-              </p>
+              <p className="mt-2 text-muted-foreground">A player wants to connect!</p>
             </div>
-            {/* Match request card */}
             <motion.div
               initial={{ y: 20, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
@@ -138,24 +148,31 @@ const MatchmakingQueue = () => {
             >
               <div className="flex items-center gap-4">
                 <div className="h-14 w-14 rounded-full bg-muted flex items-center justify-center font-display text-xl font-bold text-primary">
-                  PR
+                  {matchedProfile?.avatar_url ? (
+                    <img src={matchedProfile.avatar_url} alt="" className="h-full w-full rounded-full object-cover" />
+                  ) : (
+                    initials
+                  )}
                 </div>
                 <div>
                   <p className="font-display text-lg font-semibold tracking-wide text-foreground">
-                    PlayerRogue
+                    {matchedProfile?.username ?? "Player"}
                   </p>
-                  <p className="text-xs text-muted-foreground">Diamond II • Top Lane</p>
+                  <p className="text-xs text-muted-foreground">
+                    {matchedProfile?.rank ?? "Unranked"} •{" "}
+                    {matchedProfile?.preferred_game === "lol" ? "LoL" : matchedProfile?.preferred_game === "valorant" ? "Valorant" : "All Games"}
+                  </p>
                 </div>
               </div>
               <div className="mt-6 flex gap-3">
                 <button
-                  onClick={() => setState("idle")}
+                  onClick={() => handleRespond(true)}
                   className="flex-1 clip-angle-sm bg-primary py-3 font-display text-sm font-bold tracking-wider text-primary-foreground hover:box-glow-primary transition-all"
                 >
                   ACCEPT
                 </button>
                 <button
-                  onClick={() => setState("idle")}
+                  onClick={() => handleRespond(false)}
                   className="flex-1 clip-angle-sm border border-muted-foreground/30 py-3 font-display text-sm tracking-wider text-muted-foreground hover:border-destructive hover:text-destructive transition-all"
                 >
                   DECLINE
