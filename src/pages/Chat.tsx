@@ -1,3 +1,5 @@
+import { useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import Navbar from "@/components/Navbar";
 import FriendsSidebar from "@/components/FriendsSidebar";
 import ChatPanel from "@/components/ChatPanel";
