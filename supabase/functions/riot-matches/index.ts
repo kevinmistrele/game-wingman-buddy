@@ -97,6 +97,21 @@ Deno.serve(async (req) => {
           }
         }
 
+        // Fetch Data Dragon champion map for id->name resolution
+        let championMap: Record<number, string> = {};
+        try {
+          const versionRes = await fetch("https://ddragon.leagueoflegends.com/api/versions.json");
+          const versions: string[] = await versionRes.json();
+          const latestVersion = versions[0];
+          const champListRes = await fetch(`https://ddragon.leagueoflegends.com/cdn/${latestVersion}/data/en_US/champion.json`);
+          const champListData = await champListRes.json();
+          for (const champ of Object.values(champListData.data) as any[]) {
+            championMap[parseInt(champ.key)] = champ.id;
+          }
+        } catch (e) {
+          console.error("Failed to fetch champion data from Data Dragon:", e);
+        }
+
         // Champion mastery top 5
         const masteryRes = await fetch(
           `https://${region}.api.riotgames.com/lol/champion-mastery/v4/champion-masteries/by-puuid/${puuid}/top?count=5`,
@@ -105,12 +120,16 @@ Deno.serve(async (req) => {
         let topChampions: any[] = [];
         if (masteryRes.ok) {
           const masteries = await masteryRes.json();
-          topChampions = masteries.map((m: any) => ({
-            championId: m.championId,
-            championLevel: m.championLevel,
-            championPoints: m.championPoints,
-            lastPlayTime: new Date(m.lastPlayTime).toISOString(),
-          }));
+          topChampions = masteries.map((m: any) => {
+            const champKey = championMap[m.championId] ?? "Unknown";
+            return {
+              championId: m.championId,
+              championName: champKey,
+              championLevel: m.championLevel,
+              championPoints: m.championPoints,
+              lastPlayTime: new Date(m.lastPlayTime).toISOString(),
+            };
+          });
         }
 
         // Recent matches (last 5)

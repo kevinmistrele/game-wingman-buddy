@@ -158,11 +158,17 @@ const LolProfile = ({ data }: { data: LolProfileResponse }) => {
           <div className="grid grid-cols-5 gap-2">
             {data.topChampions.map((champ) => (
               <div key={champ.championId} className="border border-border gradient-card p-2 text-center">
-                <div className="h-10 w-10 mx-auto rounded bg-muted flex items-center justify-center text-xs font-bold text-primary">
-                  M{champ.championLevel}
-                </div>
-                <p className="mt-1 text-[10px] text-muted-foreground font-display">
-                  {(champ.championPoints / 1000).toFixed(0)}K pts
+                <img
+                  src={`https://ddragon.leagueoflegends.com/cdn/14.10.1/img/champion/${champ.championName}.png`}
+                  alt={champ.championName}
+                  className="h-12 w-12 mx-auto rounded-full border-2 border-primary/20 object-cover"
+                  onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                />
+                <p className="mt-1 font-display text-xs font-bold text-foreground truncate">
+                  {champ.championName}
+                </p>
+                <p className="text-[10px] text-muted-foreground font-display">
+                  M{champ.championLevel} • {(champ.championPoints / 1000).toFixed(0)}K
                 </p>
               </div>
             ))}
