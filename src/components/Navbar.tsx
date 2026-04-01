@@ -1,7 +1,9 @@
+import { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import logo from "@/assets/logo.png";
-import { Users, MessageSquare, Crosshair, User, LogOut } from "lucide-react";
+import { Users, MessageSquare, Crosshair, User, LogOut, Volume2, VolumeX } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
+import { isSoundEnabled, setSoundEnabled } from "@/lib/soundUtils";
 
 const navItems = [
   { label: "Home", path: "/", icon: Crosshair },
