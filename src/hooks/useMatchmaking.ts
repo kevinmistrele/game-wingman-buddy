@@ -164,6 +164,25 @@ export const useMatchmaking = (game: "lol" | "valorant") => {
       }
     }
 
+    // Fetch existing friends & conversations to exclude
+    const { data: friendships } = await supabase
+      .from("friendships")
+      .select("user1_id, user2_id")
+      .or(`user1_id.eq.${user.id},user2_id.eq.${user.id}`);
+
+    const { data: existingConvos } = await supabase
+      .from("conversations")
+      .select("user1_id, user2_id")
+      .or(`user1_id.eq.${user.id},user2_id.eq.${user.id}`);
+
+    const excludedUserIds = new Set<string>();
+    friendships?.forEach((f) => {
+      excludedUserIds.add(f.user1_id === user.id ? f.user2_id : f.user1_id);
+    });
+    existingConvos?.forEach((c) => {
+      excludedUserIds.add(c.user1_id === user.id ? c.user2_id : c.user1_id);
+    });
+
     const { data, error } = await supabase
       .from("matchmaking_queue")
       .insert({ user_id: user.id, game, status: "waiting", mode } as any)
@@ -185,7 +204,9 @@ export const useMatchmaking = (game: "lol" | "valorant") => {
 
     if (!waitingPlayers) return;
 
-    const sameModeWaiting = waitingPlayers.filter((p: any) => (p.mode ?? "normal") === mode);
+    const sameModeWaiting = waitingPlayers
+      .filter((p: any) => (p.mode ?? "normal") === mode)
+      .filter((p) => !excludedUserIds.has(p.user_id));
 
     for (const opponent of sameModeWaiting) {
       if (isRanked) {
