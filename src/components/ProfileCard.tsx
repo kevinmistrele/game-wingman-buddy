@@ -329,31 +329,7 @@ const ProfileCard = () => {
             </div>
           </>
         )}
-      </motion.div>
-
-      <Dialog open={showDeleteModal} onOpenChange={setShowDeleteModal}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle className="text-destructive">{t("delete_title")}</DialogTitle>
-            <DialogDescription>{t("delete_desc")}</DialogDescription>
-          </DialogHeader>
-          <div className="space-y-3">
-            <p className="text-sm text-muted-foreground">
-              {t("delete_confirm_text").replace("{word}", "")}
-              <span className="font-bold text-foreground">{confirmWord}</span>
-            </p>
-            <Input value={deleteConfirm} onChange={(e) => setDeleteConfirm(e.target.value)} placeholder={confirmWord} className="bg-muted border-border" />
-          </div>
-          <DialogFooter>
-            <Button variant="ghost" onClick={() => { setShowDeleteModal(false); setDeleteConfirm(""); }}>{t("delete_cancel")}</Button>
-            <Button variant="destructive" disabled={deleteConfirm !== confirmWord || deleting} onClick={handleDeleteAccount}>
-              {deleting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-              {t("delete_btn")}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </>
+    </motion.div>
   );
 };
 
