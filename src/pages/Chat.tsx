@@ -8,8 +8,13 @@ const Chat = () => {
     conversations,
     activeConversation,
     setActiveConversation,
+    messages,
+    sendMessage,
     loading,
   } = useChat();
+
+  const activeConvo = conversations.find((c) => c.id === activeConversation);
+  const otherUsername = activeConvo?.otherProfile?.username ?? undefined;
 
   return (
     <div className="min-h-screen bg-background">
@@ -22,7 +27,12 @@ const Chat = () => {
           loading={loading}
         />
         <div className="flex-1">
-          <ChatPanel />
+          <ChatPanel
+            messages={messages}
+            sendMessage={sendMessage}
+            activeConversation={activeConversation}
+            otherUsername={otherUsername}
+          />
         </div>
       </div>
     </div>
