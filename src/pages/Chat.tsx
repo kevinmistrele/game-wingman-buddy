@@ -9,12 +9,15 @@ const Chat = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const {
     conversations,
+    friends,
     activeConversation,
     setActiveConversation,
     messages,
     sendMessage,
     loading,
     deleteConversation,
+    removeFriend,
+    openConversationWithFriend,
   } = useChat();
 
   // Auto-select conversation from URL param (e.g. after match)
@@ -36,9 +39,12 @@ const Chat = () => {
       <div className="flex pt-16" style={{ height: "100vh" }}>
         <FriendsSidebar
           conversations={conversations}
+          friends={friends}
           activeConversation={activeConversation}
           onSelectConversation={setActiveConversation}
           onDeleteConversation={deleteConversation}
+          onRemoveFriend={removeFriend}
+          onOpenConversation={openConversationWithFriend}
           loading={loading}
         />
         <div className="flex-1">
