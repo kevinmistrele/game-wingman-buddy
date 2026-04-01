@@ -140,7 +140,7 @@ const OnboardingModal = ({ userId, defaultUsername, onComplete }: OnboardingModa
 
           <div className="space-y-2">
             <Label className="font-display text-xs tracking-wider text-muted-foreground">
-              RIOT ID <span className="text-muted-foreground/60">(opcional)</span>
+              RIOT ID *
             </Label>
             <div className="relative">
               <Crosshair className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
