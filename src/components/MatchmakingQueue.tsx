@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Crosshair, X, Check, Clock } from "lucide-react";
+import { Crosshair, X, Check, Clock, Users, AlertTriangle } from "lucide-react";
 import { useMatchmaking } from "@/hooks/useMatchmaking";
+import { QUEUE_MODES, TIER_LABELS, type QueueMode } from "@/lib/eloUtils";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 
@@ -9,32 +10,47 @@ interface MatchmakingQueueProps {
   game: "lol" | "valorant";
 }
 
+const TIER_COLORS: Record<string, string> = {
+  IRON: "text-muted-foreground",
+  BRONZE: "text-[hsl(25,60%,50%)]",
+  SILVER: "text-muted-foreground",
+  GOLD: "text-secondary",
+  PLATINUM: "text-[hsl(175,60%,50%)]",
+  EMERALD: "text-[hsl(140,60%,50%)]",
+  DIAMOND: "text-[hsl(210,80%,65%)]",
+  MASTER: "text-accent",
+  GRANDMASTER: "text-destructive",
+  CHALLENGER: "text-secondary",
+};
+
 const MatchmakingQueue = ({ game }: MatchmakingQueueProps) => {
   const navigate = useNavigate();
-  const { status, matchedProfile, joinQueue, cancelQueue, respondToMatch } = useMatchmaking(game);
+  const {
+    status, matchedPlayer, myRank, queueCounts, otherAccepted,
+    joinQueue, cancelQueue, respondToMatch,
+  } = useMatchmaking(game);
+
   const [timer, setTimer] = useState(0);
+  const [selectedMode, setSelectedMode] = useState<QueueMode>("normal");
 
   useEffect(() => {
-    if (status !== "searching") {
-      setTimer(0);
-      return;
-    }
+    if (status !== "searching") { setTimer(0); return; }
     const interval = setInterval(() => setTimer((p) => p + 1), 1000);
     return () => clearInterval(interval);
   }, [status]);
 
   const handleStart = async () => {
     try {
-      await joinQueue();
+      await joinQueue(selectedMode);
     } catch (e: any) {
-      toast.error(e.message || "Failed to join queue");
+      toast.error(e.message || "Falha ao entrar na fila");
     }
   };
 
   const handleRespond = async (accepted: boolean) => {
     await respondToMatch(accepted);
     if (accepted) {
-      toast.success("Match accepted! Opening chat...");
+      toast.success("Match aceito! Abrindo chat...");
       setTimeout(() => navigate("/chat"), 1500);
     }
   };
@@ -42,7 +58,11 @@ const MatchmakingQueue = ({ game }: MatchmakingQueueProps) => {
   const formatTime = (s: number) =>
     `${Math.floor(s / 60)}:${(s % 60).toString().padStart(2, "0")}`;
 
-  const initials = matchedProfile?.username?.slice(0, 2).toUpperCase() ?? "??";
+  const modeInfo = QUEUE_MODES.find((m) => m.value === selectedMode)!;
+  const isRanked = modeInfo.ranked;
+
+  const initials = matchedPlayer?.profile?.username?.slice(0, 2).toUpperCase() ?? "??";
+  const matchedRank = matchedPlayer?.rank;
 
   return (
     <div className="flex min-h-[60vh] flex-col items-center justify-center">
@@ -53,26 +73,76 @@ const MatchmakingQueue = ({ game }: MatchmakingQueueProps) => {
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.9 }}
-            className="flex flex-col items-center gap-8"
+            className="flex flex-col items-center gap-8 w-full max-w-lg"
           >
-            <div className="relative">
-              <div className="h-32 w-32 rounded-full border-2 border-primary/30 gradient-card flex items-center justify-center">
-                <Crosshair className="h-12 w-12 text-primary" />
+            {/* Own rank display */}
+            {myRank && (
+              <motion.div
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="border border-border gradient-card px-6 py-3 text-center"
+              >
+                <p className="font-display text-xs tracking-widest text-muted-foreground mb-1">SEU RANK</p>
+                <p className={`font-display text-xl font-bold ${TIER_COLORS[myRank.tier] ?? "text-foreground"}`}>
+                  {TIER_LABELS[myRank.tier] ?? myRank.tier} {myRank.rank}
+                </p>
+                <p className="text-xs text-muted-foreground">{myRank.lp} LP • {myRank.winRate}% WR</p>
+              </motion.div>
+            )}
+
+            {!myRank && isRanked && (
+              <div className="border border-destructive/30 bg-destructive/5 px-6 py-3 text-center flex items-center gap-2">
+                <AlertTriangle className="h-4 w-4 text-destructive" />
+                <p className="text-sm text-destructive">Sem rank — não é possível entrar em filas ranqueadas</p>
+              </div>
+            )}
+
+            {/* Mode selector */}
+            <div className="w-full">
+              <h3 className="font-display text-xs tracking-[0.2em] text-muted-foreground text-center mb-3">SELECIONE O MODO</h3>
+              <div className="grid grid-cols-2 gap-3">
+                {QUEUE_MODES.map((mode) => {
+                  const count = queueCounts[mode.value] ?? 0;
+                  const isSelected = selectedMode === mode.value;
+                  const disabled = mode.ranked && !myRank;
+                  return (
+                    <button
+                      key={mode.value}
+                      onClick={() => !disabled && setSelectedMode(mode.value)}
+                      disabled={disabled}
+                      className={`relative clip-angle-sm px-4 py-4 font-display text-sm font-bold tracking-wider transition-all text-left ${
+                        disabled
+                          ? "opacity-40 cursor-not-allowed border border-border text-muted-foreground"
+                          : isSelected
+                            ? "bg-primary text-primary-foreground box-glow-primary"
+                            : "border border-border text-muted-foreground hover:text-foreground hover:border-primary/50"
+                      }`}
+                    >
+                      <span className="block">{mode.label}</span>
+                      <span className="block text-[10px] font-normal tracking-normal mt-0.5 opacity-70">
+                        {mode.description}
+                      </span>
+                      <span className="absolute top-2 right-3 flex items-center gap-1 text-[10px] font-normal opacity-60">
+                        <Users className="h-3 w-3" /> {count}
+                      </span>
+                    </button>
+                  );
+                })}
               </div>
             </div>
-            <div className="text-center">
-              <h2 className="font-display text-3xl font-bold tracking-wider text-foreground">
-                READY TO MATCH
-              </h2>
-              <p className="mt-2 text-muted-foreground">
-                {game === "lol" ? "League of Legends" : "Valorant"} queue
-              </p>
+
+            {/* Start button */}
+            <div className="relative">
+              <div className="h-24 w-24 rounded-full border-2 border-primary/30 gradient-card flex items-center justify-center">
+                <Crosshair className="h-10 w-10 text-primary" />
+              </div>
             </div>
             <button
               onClick={handleStart}
-              className="clip-angle bg-primary px-10 py-4 font-display text-lg font-bold tracking-widest text-primary-foreground transition-all hover:box-glow-primary"
+              disabled={isRanked && !myRank}
+              className="clip-angle bg-primary px-10 py-4 font-display text-lg font-bold tracking-widest text-primary-foreground transition-all hover:box-glow-primary disabled:opacity-40 disabled:cursor-not-allowed"
             >
-              FIND MATCH
+              ENCONTRAR MATCH
             </button>
           </motion.div>
         )}
@@ -102,18 +172,30 @@ const MatchmakingQueue = ({ game }: MatchmakingQueueProps) => {
             </div>
             <div className="text-center">
               <h2 className="font-display text-3xl font-bold tracking-wider text-primary text-glow-primary">
-                SEARCHING
+                BUSCANDO
               </h2>
+              <p className="mt-1 font-display text-xs tracking-widest text-muted-foreground uppercase">
+                {QUEUE_MODES.find((m) => m.value === selectedMode)?.label}
+              </p>
               <p className="mt-2 font-display text-xl tracking-widest text-muted-foreground">
                 {formatTime(timer)}
               </p>
+              {timer >= 60 && (
+                <motion.p
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  className="mt-2 text-sm text-secondary"
+                >
+                  Demorando mais que o esperado...
+                </motion.p>
+              )}
             </div>
             <button
               onClick={cancelQueue}
               className="flex items-center gap-2 border border-destructive/50 bg-transparent px-8 py-3 font-display text-sm tracking-wider text-destructive transition-all hover:bg-destructive/10"
             >
               <X className="h-4 w-4" />
-              CANCEL
+              CANCELAR
             </button>
           </motion.div>
         )}
@@ -136,10 +218,12 @@ const MatchmakingQueue = ({ game }: MatchmakingQueueProps) => {
             </motion.div>
             <div className="text-center">
               <h2 className="font-display text-3xl font-bold tracking-wider text-primary text-glow-primary">
-                MATCH FOUND
+                MATCH ENCONTRADO
               </h2>
-              <p className="mt-2 text-muted-foreground">A player wants to connect!</p>
+              <p className="mt-2 text-muted-foreground">Um jogador quer se conectar!</p>
             </div>
+
+            {/* Matched player card */}
             <motion.div
               initial={{ y: 20, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
@@ -148,34 +232,52 @@ const MatchmakingQueue = ({ game }: MatchmakingQueueProps) => {
             >
               <div className="flex items-center gap-4">
                 <div className="h-14 w-14 rounded-full bg-muted flex items-center justify-center font-display text-xl font-bold text-primary">
-                  {matchedProfile?.avatar_url ? (
-                    <img src={matchedProfile.avatar_url} alt="" className="h-full w-full rounded-full object-cover" />
+                  {matchedPlayer?.profile?.avatar_url ? (
+                    <img src={matchedPlayer.profile.avatar_url} alt="" className="h-full w-full rounded-full object-cover" />
                   ) : (
                     initials
                   )}
                 </div>
-                <div>
+                <div className="flex-1">
                   <p className="font-display text-lg font-semibold tracking-wide text-foreground">
-                    {matchedProfile?.username ?? "Player"}
+                    {matchedPlayer?.profile?.username ?? "Jogador"}
                   </p>
-                  <p className="text-xs text-muted-foreground">
-                    {matchedProfile?.rank ?? "Unranked"} •{" "}
-                    {matchedProfile?.preferred_game === "lol" ? "LoL" : matchedProfile?.preferred_game === "valorant" ? "Valorant" : "All Games"}
-                  </p>
+                  {matchedRank ? (
+                    <p className={`font-display text-sm font-bold ${TIER_COLORS[matchedRank.tier] ?? "text-foreground"}`}>
+                      {TIER_LABELS[matchedRank.tier] ?? matchedRank.tier} {matchedRank.rank}
+                      <span className="text-xs font-normal text-muted-foreground ml-1">
+                        {matchedRank.lp} LP • {matchedRank.winRate}% WR
+                      </span>
+                    </p>
+                  ) : (
+                    <p className="text-xs text-muted-foreground">Sem rank</p>
+                  )}
                 </div>
               </div>
+
+              {/* Other player accepted feedback */}
+              {otherAccepted && (
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  className="mt-3 text-center text-sm text-primary font-display"
+                >
+                  ✓ O outro jogador aceitou!
+                </motion.div>
+              )}
+
               <div className="mt-6 flex gap-3">
                 <button
                   onClick={() => handleRespond(true)}
                   className="flex-1 clip-angle-sm bg-primary py-3 font-display text-sm font-bold tracking-wider text-primary-foreground hover:box-glow-primary transition-all"
                 >
-                  ACCEPT
+                  ACEITAR
                 </button>
                 <button
                   onClick={() => handleRespond(false)}
                   className="flex-1 clip-angle-sm border border-muted-foreground/30 py-3 font-display text-sm tracking-wider text-muted-foreground hover:border-destructive hover:text-destructive transition-all"
                 >
-                  DECLINE
+                  RECUSAR
                 </button>
               </div>
             </motion.div>
