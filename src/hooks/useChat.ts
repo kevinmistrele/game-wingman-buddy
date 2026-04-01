@@ -67,7 +67,14 @@ export const useChat = () => {
         filter: `conversation_id=eq.${activeConversation}`,
       }, (payload) => {
         const newMsg = payload.new as Message;
-        setMessages((prev) => prev.find((m) => m.id === newMsg.id) ? prev : [...prev, newMsg]);
+        setMessages((prev) => {
+          if (prev.find((m) => m.id === newMsg.id)) return prev;
+          // Play sound for messages from others
+          if (newMsg.sender_id !== user?.id) {
+            playNewMessageSound();
+          }
+          return [...prev, newMsg];
+        });
       })
       .subscribe();
     return () => { supabase.removeChannel(channel); };
