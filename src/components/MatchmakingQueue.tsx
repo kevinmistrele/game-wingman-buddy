@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Crosshair, X, Check, Clock, Users, AlertTriangle } from "lucide-react";
 import { useMatchmaking } from "@/hooks/useMatchmaking";
+import { useI18n } from "@/contexts/I18nContext";
 import { QUEUE_MODES, type QueueMode } from "@/lib/eloUtils";
 import RankBadge from "@/components/RankBadge";
 import { toast } from "sonner";
@@ -13,6 +14,7 @@ interface MatchmakingQueueProps {
 
 const MatchmakingQueue = ({ game }: MatchmakingQueueProps) => {
   const navigate = useNavigate();
+  const { t } = useI18n();
   const {
     status, matchedPlayer, myRank, myRankSource, queueCounts, otherAccepted,
     joinQueue, cancelQueue, respondToMatch,
@@ -29,18 +31,16 @@ const MatchmakingQueue = ({ game }: MatchmakingQueueProps) => {
 
   const handleStart = async () => {
     try { await joinQueue(selectedMode); }
-    catch (e: any) { toast.error(e.message || "Falha ao entrar na fila"); }
+    catch (e: any) { toast.error(e.message || t("mm_queue_error")); }
   };
 
   const handleRespond = async (accepted: boolean) => {
     const convoId = await respondToMatch(accepted);
     if (accepted) {
-      toast.success("Match aceito! Abrindo chat...");
-      // If we got the convo ID directly, navigate to it; otherwise wait for realtime
+      toast.success(t("mm_accepted_toast"));
       if (convoId) {
         setTimeout(() => navigate(`/chat?convo=${convoId}`), 800);
       } else {
-        // The other player accepted first; we'll get the convo via realtime
         setTimeout(() => navigate("/chat"), 1500);
       }
     }
@@ -66,24 +66,17 @@ const MatchmakingQueue = ({ game }: MatchmakingQueueProps) => {
             exit={{ opacity: 0, scale: 0.9 }}
             className="flex flex-col items-center gap-8 w-full max-w-lg"
           >
-            {/* Own rank display with emblem */}
             {myRank && (
               <motion.div
                 initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
                 className="border border-border gradient-card px-6 py-3 text-center"
               >
-                <p className="font-display text-xs tracking-widest text-muted-foreground mb-2">SEU RANK</p>
-                <RankBadge
-                  tier={myRank.tier}
-                  rank={myRank.rank}
-                  lp={myRank.lp}
-                  winRate={myRank.winRate}
-                  size="lg"
-                />
+                <p className="font-display text-xs tracking-widest text-muted-foreground mb-2">{t("mm_your_rank")}</p>
+                <RankBadge tier={myRank.tier} rank={myRank.rank} lp={myRank.lp} winRate={myRank.winRate} size="lg" />
                 {myRankSource === "manual" && (
                   <p className="text-[10px] text-muted-foreground/60 flex items-center justify-center gap-1 mt-1">
-                    <AlertTriangle className="h-3 w-3" /> Rank definido manualmente
+                    <AlertTriangle className="h-3 w-3" /> {t("mm_manual_rank")}
                   </p>
                 )}
               </motion.div>
@@ -92,13 +85,12 @@ const MatchmakingQueue = ({ game }: MatchmakingQueueProps) => {
             {!myRank && isRanked && (
               <div className="border border-destructive/30 bg-destructive/5 px-6 py-3 text-center flex items-center gap-2">
                 <AlertTriangle className="h-4 w-4 text-destructive" />
-                <p className="text-sm text-destructive">Sem rank — não é possível entrar em filas ranqueadas</p>
+                <p className="text-sm text-destructive">{t("mm_no_rank")}</p>
               </div>
             )}
 
-            {/* Mode selector */}
             <div className="w-full">
-              <h3 className="font-display text-xs tracking-[0.2em] text-muted-foreground text-center mb-3">SELECIONE O MODO</h3>
+              <h3 className="font-display text-xs tracking-[0.2em] text-muted-foreground text-center mb-3">{t("mm_select_mode")}</h3>
               <div className="grid grid-cols-2 gap-3">
                 {QUEUE_MODES.map((mode) => {
                   const count = queueCounts[mode.value] ?? 0;
@@ -130,7 +122,6 @@ const MatchmakingQueue = ({ game }: MatchmakingQueueProps) => {
               </div>
             </div>
 
-            {/* Start button */}
             <div className="relative">
               <div className="h-24 w-24 rounded-full border-2 border-primary/30 gradient-card flex items-center justify-center">
                 <Crosshair className="h-10 w-10 text-primary" />
@@ -141,7 +132,7 @@ const MatchmakingQueue = ({ game }: MatchmakingQueueProps) => {
               disabled={isRanked && !myRank}
               className="clip-angle bg-primary px-10 py-4 font-display text-lg font-bold tracking-widest text-primary-foreground transition-all hover:box-glow-primary disabled:opacity-40 disabled:cursor-not-allowed"
             >
-              ENCONTRAR MATCH
+              {t("mm_find_match")}
             </button>
           </motion.div>
         )}
@@ -171,7 +162,7 @@ const MatchmakingQueue = ({ game }: MatchmakingQueueProps) => {
             </div>
             <div className="text-center">
               <h2 className="font-display text-3xl font-bold tracking-wider text-primary text-glow-primary">
-                BUSCANDO
+                {t("mm_searching")}
               </h2>
               <p className="mt-1 font-display text-xs tracking-widest text-muted-foreground uppercase">
                 {QUEUE_MODES.find((m) => m.value === selectedMode)?.label}
@@ -181,7 +172,7 @@ const MatchmakingQueue = ({ game }: MatchmakingQueueProps) => {
               </p>
               {timer >= 60 && (
                 <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="mt-2 text-sm text-secondary">
-                  Demorando mais que o esperado...
+                  {t("mm_taking_long")}
                 </motion.p>
               )}
             </div>
@@ -189,7 +180,7 @@ const MatchmakingQueue = ({ game }: MatchmakingQueueProps) => {
               onClick={cancelQueue}
               className="flex items-center gap-2 border border-destructive/50 bg-transparent px-8 py-3 font-display text-sm tracking-wider text-destructive transition-all hover:bg-destructive/10"
             >
-              <X className="h-4 w-4" /> CANCELAR
+              <X className="h-4 w-4" /> {t("mm_cancel")}
             </button>
           </motion.div>
         )}
@@ -212,12 +203,11 @@ const MatchmakingQueue = ({ game }: MatchmakingQueueProps) => {
             </motion.div>
             <div className="text-center">
               <h2 className="font-display text-3xl font-bold tracking-wider text-primary text-glow-primary">
-                MATCH ENCONTRADO
+                {t("mm_found")}
               </h2>
-              <p className="mt-2 text-muted-foreground">Um jogador quer se conectar!</p>
+              <p className="mt-2 text-muted-foreground">{t("mm_player_wants")}</p>
             </div>
 
-            {/* Matched player card */}
             <motion.div
               initial={{ y: 20, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
@@ -234,23 +224,17 @@ const MatchmakingQueue = ({ game }: MatchmakingQueueProps) => {
                 </div>
                 <div className="flex-1">
                   <p className="font-display text-lg font-semibold tracking-wide text-foreground">
-                    {matchedPlayer?.profile?.username ?? "Jogador"}
+                    {matchedPlayer?.profile?.username ?? t("mm_player")}
                   </p>
                   {matchedRank ? (
                     <>
-                      <RankBadge
-                        tier={matchedRank.tier}
-                        rank={matchedRank.rank}
-                        lp={matchedRank.lp}
-                        winRate={matchedRank.winRate}
-                        size="sm"
-                      />
+                      <RankBadge tier={matchedRank.tier} rank={matchedRank.rank} lp={matchedRank.lp} winRate={matchedRank.winRate} size="sm" />
                       {matchedPlayer?.rankSource === "manual" && (
-                        <p className="text-[9px] text-muted-foreground/50">Rank manual</p>
+                        <p className="text-[9px] text-muted-foreground/50">{t("mm_manual_rank_short")}</p>
                       )}
                     </>
                   ) : (
-                    <p className="text-xs text-muted-foreground">Sem rank</p>
+                    <p className="text-xs text-muted-foreground">{t("mm_no_rank_label")}</p>
                   )}
                 </div>
               </div>
@@ -258,7 +242,7 @@ const MatchmakingQueue = ({ game }: MatchmakingQueueProps) => {
               {otherAccepted && (
                 <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}
                   className="mt-3 text-center text-sm text-primary font-display">
-                  ✓ O outro jogador aceitou!
+                  {t("mm_other_accepted")}
                 </motion.div>
               )}
 
@@ -267,13 +251,13 @@ const MatchmakingQueue = ({ game }: MatchmakingQueueProps) => {
                   onClick={() => handleRespond(true)}
                   className="flex-1 clip-angle-sm bg-primary py-3 font-display text-sm font-bold tracking-wider text-primary-foreground hover:box-glow-primary transition-all"
                 >
-                  ACEITAR
+                  {t("mm_accept")}
                 </button>
                 <button
                   onClick={() => handleRespond(false)}
                   className="flex-1 clip-angle-sm border border-muted-foreground/30 py-3 font-display text-sm tracking-wider text-muted-foreground hover:border-destructive hover:text-destructive transition-all"
                 >
-                  RECUSAR
+                  {t("mm_decline")}
                 </button>
               </div>
             </motion.div>

@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { Send } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
+import { useI18n } from "@/contexts/I18nContext";
 import { toast } from "sonner";
 import type { Tables } from "@/integrations/supabase/types";
 
@@ -22,6 +23,7 @@ const DiscordIcon = ({ className }: { className?: string }) => (
 
 const ChatPanel = ({ messages, sendMessage, activeConversation, otherUsername, otherDiscord }: ChatPanelProps) => {
   const { user } = useAuth();
+  const { t } = useI18n();
   const [input, setInput] = useState("");
   const bottomRef = useRef<HTMLDivElement>(null);
   const [quickMessagesSent, setQuickMessagesSent] = useState(false);
@@ -30,7 +32,6 @@ const ChatPanel = ({ messages, sendMessage, activeConversation, otherUsername, o
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  // Reset quick messages state when conversation changes
   useEffect(() => {
     setQuickMessagesSent(false);
   }, [activeConversation]);
@@ -49,7 +50,7 @@ const ChatPanel = ({ messages, sendMessage, activeConversation, otherUsername, o
   const handleCopyDiscord = () => {
     if (otherDiscord) {
       navigator.clipboard.writeText(otherDiscord);
-      toast.success(`Discord copiado: ${otherDiscord}`);
+      toast.success(`${t("chat_discord_copied")}: ${otherDiscord}`);
     }
   };
 
@@ -58,10 +59,10 @@ const ChatPanel = ({ messages, sendMessage, activeConversation, otherUsername, o
       <div className="flex h-full items-center justify-center border-l border-border">
         <div className="text-center">
           <p className="font-display text-lg tracking-wider text-muted-foreground">
-            SELECIONE UMA CONVERSA
+            {t("chat_select")}
           </p>
           <p className="mt-2 text-sm text-muted-foreground/60">
-            Escolha um amigo na barra lateral para começar a conversar
+            {t("chat_select_desc")}
           </p>
         </div>
       </div>
@@ -79,14 +80,14 @@ const ChatPanel = ({ messages, sendMessage, activeConversation, otherUsername, o
         </div>
         <div className="flex-1">
           <p className="font-display text-sm font-semibold tracking-wide text-foreground">
-            {otherUsername ?? "Player"}
+            {otherUsername ?? t("chat_player")}
           </p>
         </div>
         {otherDiscord && (
           <button
             onClick={handleCopyDiscord}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded border border-border text-muted-foreground hover:text-[#5865F2] hover:border-[#5865F2]/50 transition-colors text-xs"
-            title={`Copiar Discord: ${otherDiscord}`}
+            title={`${t("chat_discord_copied")}: ${otherDiscord}`}
           >
             <DiscordIcon className="h-4 w-4" />
             <span className="font-display tracking-wide">{otherDiscord}</span>
@@ -98,35 +99,34 @@ const ChatPanel = ({ messages, sendMessage, activeConversation, otherUsername, o
       <div className="flex-1 overflow-y-auto p-4 space-y-3">
         {messages.length === 0 && !showQuickMessages && (
           <div className="flex h-full items-center justify-center">
-            <p className="text-sm text-muted-foreground">Nenhuma mensagem ainda. Diga olá!</p>
+            <p className="text-sm text-muted-foreground">{t("chat_no_messages")}</p>
           </div>
         )}
 
-        {/* Quick messages */}
         {showQuickMessages && (
           <div className="flex h-full flex-col items-center justify-center gap-4">
             <p className="font-display text-sm tracking-wider text-muted-foreground">
-              INICIE A CONVERSA
+              {t("chat_start")}
             </p>
             <div className="flex flex-col gap-2 w-full max-w-sm">
               <button
-                onClick={() => handleQuickMessage("E aí! Bora jogar? 😄")}
+                onClick={() => handleQuickMessage(t("chat_quick_1"))}
                 className="clip-angle-sm border border-primary/30 bg-primary/5 px-4 py-3 text-sm text-foreground hover:bg-primary/10 hover:border-primary/50 transition-all text-left"
               >
-                E aí! Bora jogar? 😄
+                {t("chat_quick_1")}
               </button>
               <button
-                onClick={() => handleQuickMessage("Salve! Qual modo você prefere jogar?")}
+                onClick={() => handleQuickMessage(t("chat_quick_2"))}
                 className="clip-angle-sm border border-primary/30 bg-primary/5 px-4 py-3 text-sm text-foreground hover:bg-primary/10 hover:border-primary/50 transition-all text-left"
               >
-                Salve! Qual modo você prefere jogar?
+                {t("chat_quick_2")}
               </button>
               {otherDiscord && (
                 <button
-                  onClick={() => handleQuickMessage("Me adiciona no Discord clicando no ícone acima e bora jogar! 🎮")}
+                  onClick={() => handleQuickMessage(t("chat_quick_3"))}
                   className="clip-angle-sm border border-secondary/30 bg-secondary/5 px-4 py-3 text-sm text-foreground hover:bg-secondary/10 hover:border-secondary/50 transition-all text-left"
                 >
-                  Me adiciona no Discord clicando no ícone acima e bora jogar! 🎮
+                  {t("chat_quick_3")}
                 </button>
               )}
             </div>
@@ -163,7 +163,7 @@ const ChatPanel = ({ messages, sendMessage, activeConversation, otherUsername, o
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && handleSend()}
-            placeholder="Digite uma mensagem..."
+            placeholder={t("chat_placeholder")}
             className="flex-1 bg-muted px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground outline-none border border-border focus:border-primary/50 transition-colors"
           />
           <button
