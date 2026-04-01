@@ -285,6 +285,8 @@ export const useMatchmaking = (game: "lol" | "valorant") => {
         setMatchedPlayer(null);
         setOtherAccepted(false);
       }
+
+      return null;
     },
     [currentMatch, user]
   );

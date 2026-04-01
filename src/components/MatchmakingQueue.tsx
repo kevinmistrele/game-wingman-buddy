@@ -33,10 +33,16 @@ const MatchmakingQueue = ({ game }: MatchmakingQueueProps) => {
   };
 
   const handleRespond = async (accepted: boolean) => {
-    await respondToMatch(accepted);
+    const convoId = await respondToMatch(accepted);
     if (accepted) {
       toast.success("Match aceito! Abrindo chat...");
-      setTimeout(() => navigate("/chat"), 1500);
+      // If we got the convo ID directly, navigate to it; otherwise wait for realtime
+      if (convoId) {
+        setTimeout(() => navigate(`/chat?convo=${convoId}`), 800);
+      } else {
+        // The other player accepted first; we'll get the convo via realtime
+        setTimeout(() => navigate("/chat"), 1500);
+      }
     }
   };
 
