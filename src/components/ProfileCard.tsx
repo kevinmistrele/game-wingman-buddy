@@ -32,7 +32,7 @@ const ProfileCard = () => {
   const [uploading, setUploading] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deleting, setDeleting] = useState(false);
-  const [deleteConfirm, setDeleteConfirm] = useState("");
+  const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const { data: riotData } = useRiotProfile("lol", profile?.riot_id, "br1", 1);
