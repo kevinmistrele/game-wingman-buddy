@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef } from "react";
 import { motion } from "framer-motion";
-import { Copy, Gamepad2, Shield, Swords, Edit2, Save, X, Camera, Trash2, Loader2, AlertTriangle } from "lucide-react";
+import { Copy, Gamepad2, Shield, Swords, Edit2, Save, X, Camera, Trash2, Loader2, AlertTriangle, Settings } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Input } from "@/components/ui/input";
