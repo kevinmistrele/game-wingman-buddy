@@ -6,6 +6,7 @@ import ChatPanel from "@/components/ChatPanel";
 import { useChat } from "@/hooks/useChat";
 
 const Chat = () => {
+  const [searchParams, setSearchParams] = useSearchParams();
   const {
     conversations,
     activeConversation,
@@ -16,8 +17,18 @@ const Chat = () => {
     deleteConversation,
   } = useChat();
 
+  // Auto-select conversation from URL param (e.g. after match)
+  useEffect(() => {
+    const convoId = searchParams.get("convo");
+    if (convoId && conversations.some((c) => c.id === convoId)) {
+      setActiveConversation(convoId);
+      setSearchParams({}, { replace: true });
+    }
+  }, [searchParams, conversations, setActiveConversation, setSearchParams]);
+
   const activeConvo = conversations.find((c) => c.id === activeConversation);
   const otherUsername = activeConvo?.otherProfile?.username ?? undefined;
+  const otherDiscord = activeConvo?.otherProfile?.discord_username ?? undefined;
 
   return (
     <div className="min-h-screen bg-background">
@@ -36,6 +47,7 @@ const Chat = () => {
             sendMessage={sendMessage}
             activeConversation={activeConversation}
             otherUsername={otherUsername}
+            otherDiscord={otherDiscord}
           />
         </div>
       </div>
