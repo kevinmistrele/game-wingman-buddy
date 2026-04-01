@@ -107,7 +107,7 @@ const LolProfile = ({ data }: { data: LolProfileResponse }) => {
           <motion.div key={stat.label} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="border border-border gradient-card p-3 text-center">
             <stat.icon className="mx-auto h-4 w-4 text-primary/60 mb-1" />
             <p className="font-display text-sm font-bold text-foreground">{stat.value}</p>
-            <p className="font-display text-[9px] tracking-widest text-muted-foreground">{stat.label}</p>
+            <p className="font-display text-xs tracking-widest text-muted-foreground">{stat.label}</p>
           </motion.div>
         ))}
       </div>
@@ -124,7 +124,7 @@ const LolProfile = ({ data }: { data: LolProfileResponse }) => {
                   className="h-12 w-12 mx-auto rounded-full border-2 border-primary/20 object-cover"
                   onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
                 <p className="mt-1 font-display text-xs font-bold text-foreground truncate">{champ.championName}</p>
-                <p className="text-[10px] text-muted-foreground font-display">M{champ.championLevel} • {(champ.championPoints / 1000).toFixed(0)}K</p>
+                <p className="text-xs text-muted-foreground font-display">M{champ.championLevel} • {(champ.championPoints / 1000).toFixed(0)}K</p>
               </div>
             ))}
           </div>
@@ -180,7 +180,7 @@ const ValorantProfile = ({ data }: { data: ValorantProfileResponse }) => {
           <motion.div key={stat.label} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="border border-border gradient-card p-3 text-center">
             <stat.icon className="mx-auto h-4 w-4 text-secondary/60 mb-1" />
             <p className="font-display text-sm font-bold text-foreground">{stat.value}</p>
-            <p className="font-display text-[9px] tracking-widest text-muted-foreground">{stat.label}</p>
+            <p className="font-display text-xs tracking-widest text-muted-foreground">{stat.label}</p>
           </motion.div>
         ))}
       </div>
@@ -202,7 +202,7 @@ const ValorantProfile = ({ data }: { data: ValorantProfileResponse }) => {
                 </div>
                 <div className="text-right">
                   <p className="font-display text-sm font-bold text-foreground">{agent.winRate}% WR</p>
-                  <p className="text-[10px] text-muted-foreground">{agent.kills}/{agent.deaths}/{agent.assists} KDA</p>
+                  <p className="text-xs text-muted-foreground">{agent.kills}/{agent.deaths}/{agent.assists} KDA</p>
                 </div>
               </div>
             ))}

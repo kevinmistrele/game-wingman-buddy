@@ -81,7 +81,7 @@ const FriendsSidebar = ({
             <Users className="h-3.5 w-3.5" />
             {t("chat_friends")}
             {friends.length > 0 && (
-              <span className="ml-1 text-[10px] bg-primary/20 text-primary px-1.5 py-0.5 rounded-full">
+              <span className="ml-1 text-xs bg-primary/20 text-primary px-1.5 py-0.5 rounded-full">
                 {friends.length}
               </span>
             )}

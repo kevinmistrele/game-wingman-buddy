@@ -131,7 +131,7 @@ const Index = () => {
               <div key={stat.label} className="text-center">
                 <stat.icon className="mx-auto h-5 w-5 text-primary/60" />
                 <p className="mt-1 font-display text-xl font-bold text-foreground">{stat.value}</p>
-                <p className="font-display text-[10px] tracking-widest text-muted-foreground">
+                <p className="font-display text-xs tracking-widest text-muted-foreground">
                   {stat.label}
                 </p>
               </div>
@@ -225,7 +225,7 @@ const Index = () => {
               </div>
               <p className="mt-2 font-display text-sm font-bold text-foreground">ShadowKnight</p>
               <p className="text-xs text-primary">Gold II</p>
-              <p className="text-[10px] text-muted-foreground">LoL</p>
+              <p className="text-xs text-muted-foreground">LoL</p>
             </motion.div>
 
             {/* VS / Status */}
@@ -243,7 +243,7 @@ const Index = () => {
                       animate={{ rotate: 360 }}
                       transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
                     />
-                    <p className="mt-2 font-display text-[10px] tracking-widest text-muted-foreground">
+                    <p className="mt-2 font-display text-xs tracking-widest text-muted-foreground">
                       {t("mm_searching")}...
                     </p>
                   </motion.div>
@@ -280,7 +280,7 @@ const Index = () => {
               </div>
               <p className="mt-2 font-display text-sm font-bold text-foreground">NeonViper</p>
               <p className="text-xs text-secondary">Gold III</p>
-              <p className="text-[10px] text-muted-foreground">LoL</p>
+              <p className="text-xs text-muted-foreground">LoL</p>
             </motion.div>
           </div>
         </motion.div>
@@ -379,13 +379,13 @@ const Index = () => {
               </div>
               <div className="flex-1 min-w-0">
                 <p className="font-display text-sm font-bold text-foreground truncate">{player.name}</p>
-                <p className="text-[10px] text-muted-foreground">{player.game}</p>
+                <p className="text-xs text-muted-foreground">{player.game}</p>
               </div>
               <div className="text-right">
                 <p className="font-display text-xs font-semibold text-primary">{player.rank}</p>
                 <div className="flex items-center gap-1 justify-end">
                   <span className="h-1.5 w-1.5 rounded-full bg-green-500 animate-pulse" />
-                  <span className="text-[9px] text-muted-foreground">Online</span>
+                  <span className="text-xs text-muted-foreground">Online</span>
                 </div>
               </div>
             </motion.div>

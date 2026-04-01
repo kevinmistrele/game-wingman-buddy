@@ -58,7 +58,7 @@ const FriendProfileModal = ({ profile, open, onClose }: FriendProfileModalProps)
             {profile.riot_id && (
               <div className="flex items-center justify-between border border-border p-3 rounded">
                 <div>
-                  <p className="text-[10px] font-display tracking-widest text-muted-foreground">RIOT ID</p>
+                  <p className="text-xs font-display tracking-widest text-muted-foreground">RIOT ID</p>
                   <p className="text-sm text-foreground">{profile.riot_id}</p>
                 </div>
                 <button
@@ -75,7 +75,7 @@ const FriendProfileModal = ({ profile, open, onClose }: FriendProfileModalProps)
                 <div className="flex items-center gap-2">
                   <DiscordIcon className="h-4 w-4 text-[#5865F2]" />
                   <div>
-                    <p className="text-[10px] font-display tracking-widest text-muted-foreground">DISCORD</p>
+                    <p className="text-xs font-display tracking-widest text-muted-foreground">DISCORD</p>
                     <p className="text-sm text-foreground">{profile.discord_username}</p>
                   </div>
                 </div>
@@ -90,7 +90,7 @@ const FriendProfileModal = ({ profile, open, onClose }: FriendProfileModalProps)
 
             {hasRank && (
               <div className="border border-border p-3 rounded text-center">
-                <p className="text-[10px] font-display tracking-widest text-muted-foreground mb-2">{t("profile_rank")}</p>
+                <p className="text-xs font-display tracking-widest text-muted-foreground mb-2">{t("profile_rank")}</p>
                 <RankBadge
                   tier={profile.rank_tier!}
                   rank={profile.rank_division ?? "IV"}
@@ -99,13 +99,13 @@ const FriendProfileModal = ({ profile, open, onClose }: FriendProfileModalProps)
                   size="md"
                 />
                 {profile.rank_source === "manual" && (
-                  <p className="text-[10px] text-muted-foreground/60 mt-1">{t("profile_manual_rank")}</p>
+                  <p className="text-xs text-muted-foreground/60 mt-1">{t("profile_manual_rank")}</p>
                 )}
               </div>
             )}
 
             <div className="border border-border p-3 rounded text-center">
-              <p className="text-[10px] font-display tracking-widest text-muted-foreground">{t("friend_preferred_game")}</p>
+              <p className="text-xs font-display tracking-widest text-muted-foreground">{t("friend_preferred_game")}</p>
               <p className="text-sm text-foreground mt-1">{gameLabel}</p>
             </div>
           </div>

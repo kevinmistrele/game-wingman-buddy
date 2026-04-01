@@ -187,7 +187,7 @@ const ProfileCard = () => {
                 <div className="mt-1">
                   <RankBadge tier={effectiveRank.tier} rank={effectiveRank.division} lp={effectiveRank.lp} winRate={effectiveRank.winRate} size="sm" />
                   {effectiveRank.source === "manual" && (
-                    <p className="text-[10px] text-muted-foreground/60 flex items-center gap-1 mt-0.5">
+                    <p className="text-xs text-muted-foreground/60 flex items-center gap-1 mt-0.5">
                       <AlertTriangle className="h-3 w-3" /> {t("profile_manual_rank")}
                     </p>
                   )}
@@ -220,7 +220,7 @@ const ProfileCard = () => {
             {!hasRiotRank && (
               <div>
                 <label className="font-display text-xs tracking-wider text-muted-foreground">{t("profile_rank_manual_label")}</label>
-                <p className="text-[10px] text-muted-foreground/60 mb-1">
+                <p className="text-xs text-muted-foreground/60 mb-1">
                   {profile.riot_id ? t("profile_rank_manual_hint") : t("profile_rank_select_hint")}
                 </p>
                 <div className="flex gap-2">
@@ -259,7 +259,7 @@ const ProfileCard = () => {
             <div>
               <label className="font-display text-xs tracking-wider text-muted-foreground">RIOT ID</label>
               <Input value={riotId} onChange={(e) => setRiotId(e.target.value)} placeholder="Player#BR1" className="bg-muted border-border" />
-              <p className="text-[10px] text-muted-foreground/60 mt-1">{t("profile_riot_id_format")}</p>
+              <p className="text-xs text-muted-foreground/60 mt-1">{t("profile_riot_id_format")}</p>
             </div>
             <div>
               <label className="font-display text-xs tracking-wider text-muted-foreground">DISCORD</label>
@@ -282,7 +282,7 @@ const ProfileCard = () => {
                 <div key={stat.label} className="text-center">
                   <stat.icon className="mx-auto h-5 w-5 text-primary/60" />
                   <p className="mt-1 font-display text-xl font-bold text-foreground">{stat.value}</p>
-                  <p className="font-display text-[10px] tracking-widest text-muted-foreground">{stat.label}</p>
+                  <p className="font-display text-xs tracking-widest text-muted-foreground">{stat.label}</p>
                 </div>
               ))}
             </div>
