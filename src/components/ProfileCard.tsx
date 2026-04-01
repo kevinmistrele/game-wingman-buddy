@@ -98,20 +98,6 @@ const ProfileCard = () => {
     finally { setUploading(false); }
   };
 
-  const confirmWord = t("delete_confirm_word");
-
-  const handleDeleteAccount = async () => {
-    if (deleteConfirm !== confirmWord) return;
-    setDeleting(true);
-    try {
-      const { error } = await supabase.rpc("delete_user_account");
-      if (error) throw error;
-      toast.success(t("profile_account_deleted"));
-      await signOut();
-      navigate("/auth");
-    } catch (err: any) { toast.error(err.message || t("profile_delete_error")); }
-    finally { setDeleting(false); }
-  };
 
   const handleSave = async () => {
     if (!profile) return;
