@@ -3,25 +3,13 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Crosshair, X, Check, Clock, Users, AlertTriangle } from "lucide-react";
 import { useMatchmaking } from "@/hooks/useMatchmaking";
 import { QUEUE_MODES, TIER_LABELS, type QueueMode } from "@/lib/eloUtils";
+import RankBadge, { TIER_COLORS } from "@/components/RankBadge";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 
 interface MatchmakingQueueProps {
   game: "lol" | "valorant";
 }
-
-const TIER_COLORS: Record<string, string> = {
-  IRON: "text-muted-foreground",
-  BRONZE: "text-[hsl(25,60%,50%)]",
-  SILVER: "text-muted-foreground",
-  GOLD: "text-secondary",
-  PLATINUM: "text-[hsl(175,60%,50%)]",
-  EMERALD: "text-[hsl(140,60%,50%)]",
-  DIAMOND: "text-[hsl(210,80%,65%)]",
-  MASTER: "text-accent",
-  GRANDMASTER: "text-destructive",
-  CHALLENGER: "text-secondary",
-};
 
 const MatchmakingQueue = ({ game }: MatchmakingQueueProps) => {
   const navigate = useNavigate();
@@ -40,11 +28,8 @@ const MatchmakingQueue = ({ game }: MatchmakingQueueProps) => {
   }, [status]);
 
   const handleStart = async () => {
-    try {
-      await joinQueue(selectedMode);
-    } catch (e: any) {
-      toast.error(e.message || "Falha ao entrar na fila");
-    }
+    try { await joinQueue(selectedMode); }
+    catch (e: any) { toast.error(e.message || "Falha ao entrar na fila"); }
   };
 
   const handleRespond = async (accepted: boolean) => {
@@ -75,18 +60,21 @@ const MatchmakingQueue = ({ game }: MatchmakingQueueProps) => {
             exit={{ opacity: 0, scale: 0.9 }}
             className="flex flex-col items-center gap-8 w-full max-w-lg"
           >
-            {/* Own rank display */}
+            {/* Own rank display with emblem */}
             {myRank && (
               <motion.div
                 initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
                 className="border border-border gradient-card px-6 py-3 text-center"
               >
-                <p className="font-display text-xs tracking-widest text-muted-foreground mb-1">SEU RANK</p>
-                <p className={`font-display text-xl font-bold ${TIER_COLORS[myRank.tier] ?? "text-foreground"}`}>
-                  {TIER_LABELS[myRank.tier] ?? myRank.tier} {myRank.rank}
-                </p>
-                <p className="text-xs text-muted-foreground">{myRank.lp} LP • {myRank.winRate}% WR</p>
+                <p className="font-display text-xs tracking-widest text-muted-foreground mb-2">SEU RANK</p>
+                <RankBadge
+                  tier={myRank.tier}
+                  rank={myRank.rank}
+                  lp={myRank.lp}
+                  winRate={myRank.winRate}
+                  size="lg"
+                />
               </motion.div>
             )}
 
@@ -181,11 +169,7 @@ const MatchmakingQueue = ({ game }: MatchmakingQueueProps) => {
                 {formatTime(timer)}
               </p>
               {timer >= 60 && (
-                <motion.p
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  className="mt-2 text-sm text-secondary"
-                >
+                <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="mt-2 text-sm text-secondary">
                   Demorando mais que o esperado...
                 </motion.p>
               )}
@@ -194,8 +178,7 @@ const MatchmakingQueue = ({ game }: MatchmakingQueueProps) => {
               onClick={cancelQueue}
               className="flex items-center gap-2 border border-destructive/50 bg-transparent px-8 py-3 font-display text-sm tracking-wider text-destructive transition-all hover:bg-destructive/10"
             >
-              <X className="h-4 w-4" />
-              CANCELAR
+              <X className="h-4 w-4" /> CANCELAR
             </button>
           </motion.div>
         )}
@@ -243,25 +226,22 @@ const MatchmakingQueue = ({ game }: MatchmakingQueueProps) => {
                     {matchedPlayer?.profile?.username ?? "Jogador"}
                   </p>
                   {matchedRank ? (
-                    <p className={`font-display text-sm font-bold ${TIER_COLORS[matchedRank.tier] ?? "text-foreground"}`}>
-                      {TIER_LABELS[matchedRank.tier] ?? matchedRank.tier} {matchedRank.rank}
-                      <span className="text-xs font-normal text-muted-foreground ml-1">
-                        {matchedRank.lp} LP • {matchedRank.winRate}% WR
-                      </span>
-                    </p>
+                    <RankBadge
+                      tier={matchedRank.tier}
+                      rank={matchedRank.rank}
+                      lp={matchedRank.lp}
+                      winRate={matchedRank.winRate}
+                      size="sm"
+                    />
                   ) : (
                     <p className="text-xs text-muted-foreground">Sem rank</p>
                   )}
                 </div>
               </div>
 
-              {/* Other player accepted feedback */}
               {otherAccepted && (
-                <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  className="mt-3 text-center text-sm text-primary font-display"
-                >
+                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+                  className="mt-3 text-center text-sm text-primary font-display">
                   ✓ O outro jogador aceitou!
                 </motion.div>
               )}

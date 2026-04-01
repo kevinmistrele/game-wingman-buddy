@@ -11,6 +11,7 @@ const Chat = () => {
     messages,
     sendMessage,
     loading,
+    deleteConversation,
   } = useChat();
 
   const activeConvo = conversations.find((c) => c.id === activeConversation);
@@ -24,6 +25,7 @@ const Chat = () => {
           conversations={conversations}
           activeConversation={activeConversation}
           onSelectConversation={setActiveConversation}
+          onDeleteConversation={deleteConversation}
           loading={loading}
         />
         <div className="flex-1">
