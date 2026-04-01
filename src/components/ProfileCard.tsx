@@ -347,9 +347,12 @@ const ProfileCard = () => {
               </div>
             )}
 
-            <div className="mt-6 border-t border-border pt-5">
+            <div className="mt-6 border-t border-border pt-5 flex items-center justify-between">
+              <button onClick={() => navigate("/settings")} className="flex items-center gap-2 text-xs text-muted-foreground hover:text-primary transition-colors">
+                <Settings className="h-3 w-3" /> Configurações
+              </button>
               <button onClick={() => setShowDeleteModal(true)} className="flex items-center gap-2 text-xs text-destructive/70 hover:text-destructive transition-colors">
-                <Trash2 className="h-3 w-3" /> Excluir minha conta
+                <Trash2 className="h-3 w-3" /> Excluir conta
               </button>
             </div>
           </>
