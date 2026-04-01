@@ -269,8 +269,14 @@ export const useMatchmaking = (game: "lol" | "valorant") => {
 
       if (updateData.status === "accepted") {
         const [id1, id2] = [currentMatch.user1_id, currentMatch.user2_id].sort();
-        await supabase.from("conversations").insert({ user1_id: id1, user2_id: id2, match_id: currentMatch.id });
+        const { data: newConvo } = await supabase
+          .from("conversations")
+          .insert({ user1_id: id1, user2_id: id2, match_id: currentMatch.id })
+          .select()
+          .single();
         await supabase.from("friendships").insert({ user1_id: id1, user2_id: id2 });
+        // Return the conversation id for redirect
+        return newConvo?.id ?? null;
       }
 
       if (!accepted) {
