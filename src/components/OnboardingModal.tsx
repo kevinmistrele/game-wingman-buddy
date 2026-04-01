@@ -38,7 +38,11 @@ const OnboardingModal = ({ userId, defaultUsername, onComplete }: OnboardingModa
       toast.error("Nome de usuário é obrigatório");
       return;
     }
-    if (riotId && !validateRiotId(riotId)) return;
+    if (!riotId.trim()) {
+      toast.error("Riot ID é obrigatório");
+      return;
+    }
+    if (!validateRiotId(riotId)) return;
 
     setLoading(true);
     try {
