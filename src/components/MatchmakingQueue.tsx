@@ -14,7 +14,7 @@ interface MatchmakingQueueProps {
 const MatchmakingQueue = ({ game }: MatchmakingQueueProps) => {
   const navigate = useNavigate();
   const {
-    status, matchedPlayer, myRank, queueCounts, otherAccepted,
+    status, matchedPlayer, myRank, myRankSource, queueCounts, otherAccepted,
     joinQueue, cancelQueue, respondToMatch,
   } = useMatchmaking(game);
 
