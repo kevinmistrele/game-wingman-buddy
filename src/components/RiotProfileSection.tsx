@@ -3,22 +3,10 @@ import { motion } from "framer-motion";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRiotProfile } from "@/hooks/useRiotMatches";
-import type { LolProfileResponse, ValorantProfileResponse, LolMatch, ValorantMatch } from "@/hooks/useRiotMatches";
+import type { LolProfileResponse, ValorantProfileResponse } from "@/hooks/useRiotMatches";
 import MatchHistoryCard from "@/components/MatchHistoryCard";
+import RankBadge from "@/components/RankBadge";
 import { Trophy, Swords, Star, AlertCircle, Loader2, Shield, Target } from "lucide-react";
-
-const TIER_COLORS: Record<string, string> = {
-  IRON: "text-muted-foreground",
-  BRONZE: "text-[hsl(25,60%,50%)]",
-  SILVER: "text-muted-foreground",
-  GOLD: "text-secondary",
-  PLATINUM: "text-[hsl(175,60%,50%)]",
-  EMERALD: "text-[hsl(140,60%,50%)]",
-  DIAMOND: "text-[hsl(210,80%,65%)]",
-  MASTER: "text-accent",
-  GRANDMASTER: "text-destructive",
-  CHALLENGER: "text-secondary",
-};
 
 const RiotProfileSection = () => {
   const { profile } = useAuth();
@@ -41,7 +29,6 @@ const RiotProfileSection = () => {
 
   return (
     <div className="space-y-6">
-      {/* Game Tabs */}
       <Tabs value={game} onValueChange={(v) => setGame(v as "lol" | "valorant")}>
         <TabsList className="bg-muted border border-border w-full">
           <TabsTrigger value="lol" className="flex-1 font-display tracking-wider text-xs data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
@@ -96,7 +83,6 @@ const LolProfile = ({ data }: { data: LolProfileResponse }) => {
 
   return (
     <>
-      {/* Summoner Info */}
       {data.summoner && (
         <motion.div
           initial={{ opacity: 0, y: 10 }}
@@ -116,19 +102,20 @@ const LolProfile = ({ data }: { data: LolProfileResponse }) => {
               <p className="text-sm text-muted-foreground">Nível {data.summoner.level}</p>
             </div>
             {ranked && (
-              <div className="text-right">
-                <p className={`font-display text-lg font-bold ${TIER_COLORS[ranked.tier] ?? "text-foreground"}`}>
-                  {ranked.tier} {ranked.rank}
-                </p>
-                <p className="text-xs text-muted-foreground">{ranked.lp} LP • {ranked.winRate}% WR</p>
-                <p className="text-[10px] text-muted-foreground">{ranked.wins}V {ranked.losses}D</p>
-              </div>
+              <RankBadge
+                tier={ranked.tier}
+                rank={ranked.rank}
+                lp={ranked.lp}
+                winRate={ranked.winRate}
+                wins={ranked.wins}
+                losses={ranked.losses}
+                size="lg"
+              />
             )}
           </div>
         </motion.div>
       )}
 
-      {/* Stats Overview */}
       <div className="grid grid-cols-4 gap-3">
         {[
           { label: "PARTIDAS", value: totalMatches.toString(), icon: Swords },
@@ -149,7 +136,6 @@ const LolProfile = ({ data }: { data: LolProfileResponse }) => {
         ))}
       </div>
 
-      {/* Top Champions */}
       {data.topChampions.length > 0 && (
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-2">
           <h4 className="font-display text-xs tracking-[0.2em] text-muted-foreground flex items-center gap-2">
@@ -176,7 +162,6 @@ const LolProfile = ({ data }: { data: LolProfileResponse }) => {
         </motion.div>
       )}
 
-      {/* Match History */}
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-2">
         <h4 className="font-display text-xs tracking-[0.2em] text-muted-foreground flex items-center gap-2">
           <Swords className="h-3 w-3" /> PARTIDAS RECENTES
@@ -203,7 +188,6 @@ const ValorantProfile = ({ data }: { data: ValorantProfileResponse }) => {
 
   return (
     <>
-      {/* Player Header */}
       <motion.div
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
@@ -222,7 +206,6 @@ const ValorantProfile = ({ data }: { data: ValorantProfileResponse }) => {
         </div>
       </motion.div>
 
-      {/* Stats */}
       <div className="grid grid-cols-4 gap-3">
         {[
           { label: "PARTIDAS", value: totalMatches.toString(), icon: Swords },
@@ -243,7 +226,6 @@ const ValorantProfile = ({ data }: { data: ValorantProfileResponse }) => {
         ))}
       </div>
 
-      {/* Top Agents */}
       {data.topAgents.length > 0 && (
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-2">
           <h4 className="font-display text-xs tracking-[0.2em] text-muted-foreground flex items-center gap-2">
@@ -271,7 +253,6 @@ const ValorantProfile = ({ data }: { data: ValorantProfileResponse }) => {
         </motion.div>
       )}
 
-      {/* Match History */}
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-2">
         <h4 className="font-display text-xs tracking-[0.2em] text-muted-foreground flex items-center gap-2">
           <Swords className="h-3 w-3" /> PARTIDAS RECENTES
