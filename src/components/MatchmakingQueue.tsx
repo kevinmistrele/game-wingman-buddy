@@ -75,6 +75,11 @@ const MatchmakingQueue = ({ game }: MatchmakingQueueProps) => {
                   winRate={myRank.winRate}
                   size="lg"
                 />
+                {myRankSource === "manual" && (
+                  <p className="text-[10px] text-muted-foreground/60 flex items-center justify-center gap-1 mt-1">
+                    <AlertTriangle className="h-3 w-3" /> Rank definido manualmente
+                  </p>
+                )}
               </motion.div>
             )}
 
