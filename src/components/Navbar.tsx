@@ -1,7 +1,9 @@
+import { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import logo from "@/assets/logo.png";
-import { Users, MessageSquare, Crosshair, User, LogOut } from "lucide-react";
+import { Users, MessageSquare, Crosshair, User, LogOut, Volume2, VolumeX } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
+import { isSoundEnabled, setSoundEnabled } from "@/lib/soundUtils";
 
 const navItems = [
   { label: "Home", path: "/", icon: Crosshair },
@@ -9,6 +11,20 @@ const navItems = [
   { label: "Chat", path: "/chat", icon: MessageSquare },
   { label: "Profile", path: "/profile", icon: User },
 ];
+
+const SoundToggle = () => {
+  const [enabled, setEnabled] = useState(isSoundEnabled());
+  const toggle = () => {
+    const next = !enabled;
+    setEnabled(next);
+    setSoundEnabled(next);
+  };
+  return (
+    <button onClick={toggle} className="p-2 text-muted-foreground hover:text-foreground transition-colors" title={enabled ? "Desativar sons" : "Ativar sons"}>
+      {enabled ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4" />}
+    </button>
+  );
+};
 
 const Navbar = () => {
   const location = useLocation();
@@ -52,6 +68,7 @@ const Navbar = () => {
 
         {user ? (
           <div className="flex items-center gap-3">
+            <SoundToggle />
             <span className="font-display text-sm tracking-wide text-foreground hidden sm:inline">
               {profile?.username ?? user.email?.split("@")[0]}
             </span>
