@@ -11,6 +11,7 @@ type Match = Tables<"matches">;
 interface MatchedPlayerInfo {
   profile: Tables<"profiles">;
   rank: { tier: string; rank: string; lp: number; winRate: number } | null;
+  rankSource?: "riot" | "manual";
 }
 
 export const useMatchmaking = (game: "lol" | "valorant") => {
@@ -25,11 +26,20 @@ export const useMatchmaking = (game: "lol" | "valorant") => {
 
   // Fetch own rank from Riot API
   const { data: riotData } = useRiotProfile(game, profile?.riot_id, "br1", 1);
-  const myRank = riotData?.game === "lol" && riotData.summoner?.ranked
+  const riotRank = riotData?.game === "lol" && riotData.summoner?.ranked
     ? riotData.summoner.ranked.find(r => r.queueType === "RANKED_SOLO_5x5")
       ?? riotData.summoner.ranked.find(r => r.queueType === "RANKED_FLEX_SR")
       ?? null
     : null;
+
+  // Fallback to manual rank from profile
+  const manualTier = (profile as any)?.rank_tier as string | null;
+  const manualDivision = (profile as any)?.rank_division as string | null;
+  const manualRank = manualTier ? { tier: manualTier, rank: manualDivision ?? "IV", lp: 0, winRate: 0 } : null;
+
+  // Effective rank: API > manual
+  const myRank = riotRank ?? manualRank;
+  const myRankSource: "riot" | "manual" | null = riotRank ? "riot" : manualRank ? "manual" : null;
 
   // Fetch queue counts periodically
   useEffect(() => {
@@ -53,6 +63,40 @@ export const useMatchmaking = (game: "lol" | "valorant") => {
     return () => clearInterval(interval);
   }, [game]);
 
+  // Helper to resolve a user's rank (API first, then manual fallback)
+  const resolveOpponentRank = async (otherProfile: Tables<"profiles">): Promise<{ rank: MatchedPlayerInfo["rank"]; source: "riot" | "manual" | null }> => {
+    // Try Riot API first
+    if (otherProfile.riot_id) {
+      try {
+        const projectUrl = import.meta.env.VITE_SUPABASE_URL;
+        const apiKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+        const { data: { session } } = await supabase.auth.getSession();
+        const res = await fetch(
+          `${projectUrl}/functions/v1/riot-matches?action=profile&game=lol&riotId=${encodeURIComponent(otherProfile.riot_id)}&region=br1&count=1`,
+          { headers: { Authorization: `Bearer ${session?.access_token ?? ""}`, apikey: apiKey } }
+        );
+        if (res.ok) {
+          const data = await res.json();
+          if (data.summoner?.ranked) {
+            const soloQ = data.summoner.ranked.find((r: any) => r.queueType === "RANKED_SOLO_5x5");
+            const flexQ = data.summoner.ranked.find((r: any) => r.queueType === "RANKED_FLEX_SR");
+            const rank = soloQ ?? flexQ ?? null;
+            if (rank) return { rank, source: "riot" };
+          }
+        }
+      } catch { /* fall through to manual */ }
+    }
+
+    // Fallback to manual rank
+    const oppTier = (otherProfile as any)?.rank_tier as string | null;
+    const oppDiv = (otherProfile as any)?.rank_division as string | null;
+    if (oppTier) {
+      return { rank: { tier: oppTier, rank: oppDiv ?? "IV", lp: 0, winRate: 0 }, source: "manual" };
+    }
+
+    return { rank: null, source: null };
+  };
+
   // Listen for match changes in real-time
   useEffect(() => {
     if (!user) return;
@@ -71,42 +115,16 @@ export const useMatchmaking = (game: "lol" | "valorant") => {
           if (match.status === "pending") {
             setStatus("found");
             const otherUserId = match.user1_id === user.id ? match.user2_id : match.user1_id;
-
-            // Check if other user already accepted
             const isUser1 = match.user1_id === user.id;
             const otherStatus = isUser1 ? match.user2_status : match.user1_status;
             setOtherAccepted(otherStatus === "accepted");
 
-            // Fetch matched user's profile and rank
             const { data: otherProfile } = await supabase
-              .from("profiles")
-              .select("*")
-              .eq("user_id", otherUserId)
-              .single();
+              .from("profiles").select("*").eq("user_id", otherUserId).single();
 
             if (otherProfile) {
-              // Try to get rank from Riot API via edge function
-              let rank = null;
-              if (otherProfile.riot_id) {
-                try {
-                  const projectUrl = import.meta.env.VITE_SUPABASE_URL;
-                  const apiKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
-                  const { data: { session } } = await supabase.auth.getSession();
-                  const res = await fetch(
-                    `${projectUrl}/functions/v1/riot-matches?action=profile&game=lol&riotId=${encodeURIComponent(otherProfile.riot_id)}&region=br1&count=1`,
-                    { headers: { Authorization: `Bearer ${session?.access_token ?? ""}`, apikey: apiKey } }
-                  );
-                  if (res.ok) {
-                    const data = await res.json();
-                    if (data.summoner?.ranked) {
-                      const soloQ = data.summoner.ranked.find((r: any) => r.queueType === "RANKED_SOLO_5x5");
-                      const flexQ = data.summoner.ranked.find((r: any) => r.queueType === "RANKED_FLEX_SR");
-                      rank = soloQ ?? flexQ ?? null;
-                    }
-                  }
-                } catch { /* ignore */ }
-              }
-              setMatchedPlayer({ profile: otherProfile, rank });
+              const { rank, source } = await resolveOpponentRank(otherProfile);
+              setMatchedPlayer({ profile: otherProfile, rank, rankSource: source ?? undefined });
             }
           } else if (match.status === "accepted") {
             setStatus("idle");
@@ -123,7 +141,6 @@ export const useMatchmaking = (game: "lol" | "valorant") => {
     return () => { supabase.removeChannel(channel); };
   }, [user]);
 
-  // Watch for other player accepting while we're in "found" state
   useEffect(() => {
     if (!currentMatch || !user || status !== "found") return;
     const isUser1 = currentMatch.user1_id === user.id;
@@ -135,13 +152,11 @@ export const useMatchmaking = (game: "lol" | "valorant") => {
     if (!user) return;
     selectedModeRef.current = mode;
 
-    // Ranked modes require rank
     const isRanked = mode === "solo_duo" || mode === "flex";
     if (isRanked && !myRank) {
       throw new Error("Você precisa ter um rank para entrar em filas ranqueadas.");
     }
 
-    // Master+ cannot Solo/Duo
     if (mode === "solo_duo" && myRank) {
       const highTiers = ["MASTER", "GRANDMASTER", "CHALLENGER"];
       if (highTiers.includes(myRank.tier)) {
@@ -149,7 +164,6 @@ export const useMatchmaking = (game: "lol" | "valorant") => {
       }
     }
 
-    // Insert into queue
     const { data, error } = await supabase
       .from("matchmaking_queue")
       .insert({ user_id: user.id, game, status: "waiting", mode } as any)
@@ -160,7 +174,6 @@ export const useMatchmaking = (game: "lol" | "valorant") => {
     setQueueEntryId(data.id);
     setStatus("searching");
 
-    // Try to find a match
     const { data: waitingPlayers } = await supabase
       .from("matchmaking_queue")
       .select("*")
@@ -172,43 +185,24 @@ export const useMatchmaking = (game: "lol" | "valorant") => {
 
     if (!waitingPlayers) return;
 
-    // Filter by same mode
     const sameModeWaiting = waitingPlayers.filter((p: any) => (p.mode ?? "normal") === mode);
 
-    // For ranked modes, we need to check elo compatibility
     for (const opponent of sameModeWaiting) {
       if (isRanked) {
-        // Fetch opponent's rank
         try {
           const { data: oppProfile } = await supabase
-            .from("profiles")
-            .select("riot_id")
-            .eq("user_id", opponent.user_id)
-            .single();
+            .from("profiles").select("*").eq("user_id", opponent.user_id).single();
 
-          if (!oppProfile?.riot_id) continue;
+          if (!oppProfile) continue;
 
-          const projectUrl = import.meta.env.VITE_SUPABASE_URL;
-          const apiKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
-          const { data: { session } } = await supabase.auth.getSession();
-          const res = await fetch(
-            `${projectUrl}/functions/v1/riot-matches?action=profile&game=lol&riotId=${encodeURIComponent(oppProfile.riot_id)}&region=br1&count=1`,
-            { headers: { Authorization: `Bearer ${session?.access_token ?? ""}`, apikey: apiKey } }
-          );
-
-          if (!res.ok) continue;
-          const riotRes = await res.json();
-          const oppRanked = riotRes.summoner?.ranked?.find((r: any) => r.queueType === "RANKED_SOLO_5x5")
-            ?? riotRes.summoner?.ranked?.find((r: any) => r.queueType === "RANKED_FLEX_SR");
-
-          if (!oppRanked) continue;
-          if (!canMatch(mode, myRank, { tier: oppRanked.tier, rank: oppRanked.rank })) continue;
+          const { rank: oppRank } = await resolveOpponentRank(oppProfile);
+          if (!oppRank) continue;
+          if (!canMatch(mode, myRank, { tier: oppRank.tier, rank: oppRank.rank })) continue;
         } catch {
           continue;
         }
       }
 
-      // Found a compatible opponent - create match
       const { data: match, error: matchError } = await supabase
         .from("matches")
         .insert({ user1_id: opponent.user_id, user2_id: user.id, game })
@@ -227,10 +221,7 @@ export const useMatchmaking = (game: "lol" | "valorant") => {
 
   const cancelQueue = useCallback(async () => {
     if (queueEntryId) {
-      await supabase
-        .from("matchmaking_queue")
-        .update({ status: "cancelled" })
-        .eq("id", queueEntryId);
+      await supabase.from("matchmaking_queue").update({ status: "cancelled" }).eq("id", queueEntryId);
     }
     setStatus("idle");
     setQueueEntryId(null);
@@ -276,6 +267,7 @@ export const useMatchmaking = (game: "lol" | "valorant") => {
     currentMatch,
     matchedPlayer,
     myRank,
+    myRankSource,
     queueCounts,
     otherAccepted,
     joinQueue,
