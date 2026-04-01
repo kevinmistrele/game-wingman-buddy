@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRiotProfile } from "@/hooks/useRiotMatches";
 import { canMatch } from "@/lib/eloUtils";
+import { playMatchFoundSound, playMatchAcceptedSound } from "@/lib/soundUtils";
 import type { Tables } from "@/integrations/supabase/types";
 import type { QueueMode } from "@/lib/eloUtils";
 
