@@ -120,6 +120,7 @@ export const useMatchmaking = (game: "lol" | "valorant") => {
             const isUser1 = match.user1_id === user.id;
             const otherStatus = isUser1 ? match.user2_status : match.user1_status;
             setOtherAccepted(otherStatus === "accepted");
+            if (otherStatus === "accepted") playMatchAcceptedSound();
 
             const { data: otherProfile } = await supabase
               .from("profiles").select("*").eq("user_id", otherUserId).single();
