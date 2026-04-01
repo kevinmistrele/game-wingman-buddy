@@ -236,6 +236,17 @@ export const translations = {
     home_highlight_3_desc: "Converse com seus matches em tempo real dentro da plataforma",
     home_highlight_4_title: "Integração Discord",
     home_highlight_4_desc: "Compartilhe e copie tags Discord facilmente para jogar",
+    home_live_title: "ATIVIDADE NA PLATAFORMA",
+    home_match_preview_title: "PREVIEW DE MATCH",
+    home_match_found: "MATCH ENCONTRADO!",
+    home_match_vs: "VS",
+    home_mock_players_title: "JOGADORES NA PLATAFORMA",
+    home_activity_1: "🎮 Match iniciado agora — Gold II vs Gold III",
+    home_activity_2: "⚡ Jogador encontrado em 8s — Platina I",
+    home_activity_3: "🔥 +1 jogador entrou na fila — Diamante IV",
+    home_activity_4: "🎯 Match aceito — Prata III vs Prata II",
+    home_activity_5: "✨ Novo jogador se cadastrou — bem-vindo!",
+    home_activity_6: "⚔️ Duo formado — Ouro I + Ouro II",
   },
 
   en: {
