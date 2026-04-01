@@ -484,6 +484,17 @@ export const translations = {
     home_highlight_3_desc: "Chat with your matches in real time within the platform",
     home_highlight_4_title: "Discord Integration",
     home_highlight_4_desc: "Easily share and copy Discord tags to play together",
+    home_live_title: "PLATFORM ACTIVITY",
+    home_match_preview_title: "MATCH PREVIEW",
+    home_match_found: "MATCH FOUND!",
+    home_match_vs: "VS",
+    home_mock_players_title: "PLAYERS ON THE PLATFORM",
+    home_activity_1: "🎮 Match started now — Gold II vs Gold III",
+    home_activity_2: "⚡ Player found in 8s — Platinum I",
+    home_activity_3: "🔥 +1 player joined the queue — Diamond IV",
+    home_activity_4: "🎯 Match accepted — Silver III vs Silver II",
+    home_activity_5: "✨ New player signed up — welcome!",
+    home_activity_6: "⚔️ Duo formed — Gold I + Gold II",
   },
 } as const;
 
