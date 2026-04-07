@@ -44,6 +44,8 @@ const Chat = () => {
   const handleAcceptRequest = async (requestId: string, senderId: string) => {
     await acceptRequest(requestId, senderId);
     refreshRequests();
+    await refreshFriends();
+    await refreshConversations();
   };
 
   return (
