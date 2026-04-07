@@ -1,9 +1,10 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Crosshair, X, Check, Clock, Users, AlertTriangle } from "lucide-react";
+import { Crosshair, X, Check, Clock, Users, AlertTriangle, Loader2 } from "lucide-react";
 import { useMatchmaking } from "@/hooks/useMatchmaking";
 import { QUEUE_MODES, type QueueMode } from "@/lib/eloUtils";
 import RankBadge from "@/components/RankBadge";
+import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 
@@ -16,27 +17,41 @@ const MatchmakingQueue = () => {
 
   const [timer, setTimer] = useState(0);
   const [selectedMode, setSelectedMode] = useState<QueueMode>("normal");
+  const [joiningQueue, setJoiningQueue] = useState(false);
+  const [respondingMatch, setRespondingMatch] = useState<"accept" | "decline" | null>(null);
 
   useEffect(() => {
     if (status !== "searching") { setTimer(0); return; }
+    setJoiningQueue(false);
     const interval = setInterval(() => setTimer((p) => p + 1), 1000);
     return () => clearInterval(interval);
   }, [status]);
 
+  useEffect(() => {
+    if (status === "found") setJoiningQueue(false);
+    if (status === "idle") setRespondingMatch(null);
+  }, [status]);
+
   const handleStart = async () => {
+    setJoiningQueue(true);
     try { await joinQueue(selectedMode); }
-    catch (e: any) { toast.error(e.message || "Falha ao entrar na fila"); }
+    catch (e: any) { toast.error(e.message || "Falha ao entrar na fila"); setJoiningQueue(false); }
   };
 
   const handleRespond = async (accepted: boolean) => {
-    const convoId = await respondToMatch(accepted);
-    if (accepted) {
-      toast.success("Match aceito! Abrindo chat...");
-      if (convoId) {
-        setTimeout(() => navigate(`/chat?convo=${convoId}`), 800);
-      } else {
-        setTimeout(() => navigate("/chat"), 1500);
+    setRespondingMatch(accepted ? "accept" : "decline");
+    try {
+      const convoId = await respondToMatch(accepted);
+      if (accepted) {
+        toast.success("Match aceito! Abrindo chat...");
+        if (convoId) {
+          setTimeout(() => navigate(`/chat?convo=${convoId}`), 800);
+        } else {
+          setTimeout(() => navigate("/chat"), 1500);
+        }
       }
+    } catch {
+      setRespondingMatch(null);
     }
   };
 
@@ -46,13 +61,10 @@ const MatchmakingQueue = () => {
   const modeInfo = QUEUE_MODES.find((m) => m.value === selectedMode)!;
   const isRanked = modeInfo.ranked;
 
-  const initials = matchedPlayer?.profile?.username?.slice(0, 2).toUpperCase() ?? "??";
-  const matchedRank = matchedPlayer?.rank;
-
   return (
     <div className="flex min-h-[60vh] flex-col items-center justify-center">
       <AnimatePresence mode="wait">
-        {status === "idle" && (
+        {status === "idle" && !joiningQueue && (
           <motion.div
             key="idle"
             initial={{ opacity: 0, scale: 0.9 }}
@@ -133,6 +145,19 @@ const MatchmakingQueue = () => {
           </motion.div>
         )}
 
+        {(status === "idle" && joiningQueue) && (
+          <motion.div
+            key="joining"
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.9 }}
+            className="flex flex-col items-center gap-6"
+          >
+            <Loader2 className="h-16 w-16 text-primary animate-spin" />
+            <p className="font-display text-sm tracking-widest text-muted-foreground">ENTRANDO NA FILA...</p>
+          </motion.div>
+        )}
+
         {status === "searching" && (
           <motion.div
             key="searching"
@@ -210,30 +235,40 @@ const MatchmakingQueue = () => {
               transition={{ delay: 0.3 }}
               className="clip-angle border border-primary/30 gradient-card p-6 w-80"
             >
-              <div className="flex items-center gap-4">
-                <div className="h-14 w-14 rounded-full bg-muted flex items-center justify-center font-display text-xl font-bold text-primary">
-                  {matchedPlayer?.profile?.avatar_url ? (
-                    <img src={matchedPlayer.profile.avatar_url} alt="" className="h-full w-full rounded-full object-cover" />
-                  ) : (
-                    initials
-                  )}
+              {!matchedPlayer ? (
+                <div className="flex items-center gap-4">
+                  <Skeleton className="h-14 w-14 rounded-full shrink-0" />
+                  <div className="flex-1 space-y-2">
+                    <Skeleton className="h-5 w-32" />
+                    <Skeleton className="h-4 w-24" />
+                  </div>
                 </div>
-                <div className="flex-1">
-                  <p className="font-display text-lg font-semibold tracking-wide text-foreground">
-                    {matchedPlayer?.profile?.username ?? "Jogador"}
-                  </p>
-                  {matchedRank ? (
-                    <>
-                      <RankBadge tier={matchedRank.tier} rank={matchedRank.rank} lp={matchedRank.lp} winRate={matchedRank.winRate} size="sm" />
-                      {matchedPlayer?.rankSource === "manual" && (
-                        <p className="text-xs text-muted-foreground/50">Rank manual</p>
-                      )}
-                    </>
-                  ) : (
-                    <p className="text-xs text-muted-foreground">Sem rank</p>
-                  )}
+              ) : (
+                <div className="flex items-center gap-4">
+                  <div className="h-14 w-14 rounded-full bg-muted flex items-center justify-center font-display text-xl font-bold text-primary">
+                    {matchedPlayer.profile.avatar_url ? (
+                      <img src={matchedPlayer.profile.avatar_url} alt="" className="h-full w-full rounded-full object-cover" />
+                    ) : (
+                      matchedPlayer.profile.username?.slice(0, 2).toUpperCase() ?? "??"
+                    )}
+                  </div>
+                  <div className="flex-1">
+                    <p className="font-display text-lg font-semibold tracking-wide text-foreground">
+                      {matchedPlayer.profile.username ?? "Jogador"}
+                    </p>
+                    {matchedPlayer.rank ? (
+                      <>
+                        <RankBadge tier={matchedPlayer.rank.tier} rank={matchedPlayer.rank.rank} lp={matchedPlayer.rank.lp} winRate={matchedPlayer.rank.winRate} size="sm" />
+                        {matchedPlayer.rankSource === "manual" && (
+                          <p className="text-xs text-muted-foreground/50">Rank manual</p>
+                        )}
+                      </>
+                    ) : (
+                      <p className="text-xs text-muted-foreground">Sem rank</p>
+                    )}
+                  </div>
                 </div>
-              </div>
+              )}
 
               {otherAccepted && (
                 <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}
@@ -245,14 +280,18 @@ const MatchmakingQueue = () => {
               <div className="mt-6 flex gap-3">
                 <button
                   onClick={() => handleRespond(true)}
-                  className="flex-1 clip-angle-sm bg-primary py-3 font-display text-sm font-bold tracking-wider text-primary-foreground hover:box-glow-primary transition-all"
+                  disabled={!!respondingMatch}
+                  className="flex-1 clip-angle-sm bg-primary py-3 font-display text-sm font-bold tracking-wider text-primary-foreground hover:box-glow-primary transition-all disabled:opacity-60 flex items-center justify-center gap-2"
                 >
+                  {respondingMatch === "accept" ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
                   ACEITAR
                 </button>
                 <button
                   onClick={() => handleRespond(false)}
-                  className="flex-1 clip-angle-sm border border-muted-foreground/30 py-3 font-display text-sm tracking-wider text-muted-foreground hover:border-destructive hover:text-destructive transition-all"
+                  disabled={!!respondingMatch}
+                  className="flex-1 clip-angle-sm border border-muted-foreground/30 py-3 font-display text-sm tracking-wider text-muted-foreground hover:border-destructive hover:text-destructive transition-all disabled:opacity-60 flex items-center justify-center gap-2"
                 >
+                  {respondingMatch === "decline" ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
                   RECUSAR
                 </button>
               </div>
