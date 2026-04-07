@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { Settings, Palette, Trash2, Download, Loader2, ArrowLeft, Volume2, VolumeX, ShieldBan, ChevronLeft, ChevronRight, UserX } from "lucide-react";
+import { Settings, Palette, Trash2, Download, Loader2, ArrowLeft, Volume2, VolumeX, ShieldBan, ChevronLeft, ChevronRight, UserX, Map } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTheme } from "@/contexts/ThemeContext";
@@ -9,6 +9,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { ROLES, type Role } from "@/lib/eloUtils";
+import RoleIcon, { ROLE_LABELS } from "@/components/RoleIcon";
 import { toast } from "sonner";
 
 interface BlockedUser {
