@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { MessageSquare, Trash2, Users, UserMinus, MessageCircle, Eye } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
-import { useI18n } from "@/contexts/I18nContext";
 import { toast } from "sonner";
 import type { Tables } from "@/integrations/supabase/types";
 import type { ConversationWithProfile, FriendWithProfile } from "@/hooks/useChat";
@@ -30,18 +29,15 @@ const FriendsSidebar = ({
   loading,
 }: FriendsSidebarProps) => {
   const { user } = useAuth();
-  const { t } = useI18n();
   const [activeTab, setActiveTab] = useState<"conversations" | "friends">("conversations");
   const [viewingProfile, setViewingProfile] = useState<Tables<"profiles"> | null>(null);
-
-  // Confirmation states
   const [confirmDeleteConvo, setConfirmDeleteConvo] = useState<string | null>(null);
   const [confirmRemoveFriend, setConfirmRemoveFriend] = useState<string | null>(null);
 
   const handleConfirmDeleteConvo = () => {
     if (confirmDeleteConvo && onDeleteConversation) {
       onDeleteConversation(confirmDeleteConvo);
-      toast.success(t("chat_convo_hidden"));
+      toast.success("Conversa ocultada");
     }
     setConfirmDeleteConvo(null);
   };
@@ -49,7 +45,7 @@ const FriendsSidebar = ({
   const handleConfirmRemoveFriend = () => {
     if (confirmRemoveFriend && onRemoveFriend) {
       onRemoveFriend(confirmRemoveFriend);
-      toast.success(t("chat_friend_removed"));
+      toast.success("Amigo removido");
     }
     setConfirmRemoveFriend(null);
   };
@@ -57,7 +53,6 @@ const FriendsSidebar = ({
   return (
     <>
       <div className="flex h-full w-72 flex-col border-r border-border bg-card">
-        {/* Tab switcher */}
         <div className="flex border-b border-border">
           <button
             onClick={() => setActiveTab("conversations")}
@@ -68,7 +63,7 @@ const FriendsSidebar = ({
             }`}
           >
             <MessageSquare className="h-3.5 w-3.5" />
-            {t("chat_conversations")}
+            CONVERSAS
           </button>
           <button
             onClick={() => setActiveTab("friends")}
@@ -79,7 +74,7 @@ const FriendsSidebar = ({
             }`}
           >
             <Users className="h-3.5 w-3.5" />
-            {t("chat_friends")}
+            AMIGOS
             {friends.length > 0 && (
               <span className="ml-1 text-xs bg-primary/20 text-primary px-1.5 py-0.5 rounded-full">
                 {friends.length}
@@ -90,16 +85,15 @@ const FriendsSidebar = ({
 
         <div className="flex-1 overflow-y-auto">
           {loading && (
-            <div className="p-4 text-center text-sm text-muted-foreground">{t("chat_loading")}</div>
+            <div className="p-4 text-center text-sm text-muted-foreground">Carregando...</div>
           )}
 
-          {/* Conversations tab */}
           {activeTab === "conversations" && !loading && (
             <>
               {conversations.length === 0 && (
                 <div className="p-4 text-center">
-                  <p className="text-sm text-muted-foreground">{t("chat_no_convos")}</p>
-                  <p className="mt-1 text-xs text-muted-foreground/60">{t("chat_no_convos_desc")}</p>
+                  <p className="text-sm text-muted-foreground">Nenhuma conversa ainda</p>
+                  <p className="mt-1 text-xs text-muted-foreground/60">Faça match com jogadores para começar a conversar!</p>
                 </div>
               )}
 
@@ -128,14 +122,14 @@ const FriendsSidebar = ({
                         {profile?.username ?? "Jogador"}
                       </p>
                       <p className="truncate text-xs text-muted-foreground">
-                        {conv.lastMessage?.content ?? t("chat_start_convo")}
+                        {conv.lastMessage?.content ?? "Inicie uma conversa"}
                       </p>
                     </div>
                     {onDeleteConversation && (
                       <button
                         onClick={(e) => { e.stopPropagation(); setConfirmDeleteConvo(conv.id); }}
                         className="p-1 text-muted-foreground/0 group-hover:text-muted-foreground hover:!text-destructive transition-colors"
-                        title={t("chat_hide_convo")}
+                        title="Ocultar conversa"
                       >
                         <Trash2 className="h-4 w-4" />
                       </button>
@@ -146,13 +140,12 @@ const FriendsSidebar = ({
             </>
           )}
 
-          {/* Friends tab */}
           {activeTab === "friends" && !loading && (
             <>
               {friends.length === 0 && (
                 <div className="p-4 text-center">
-                  <p className="text-sm text-muted-foreground">{t("chat_no_friends")}</p>
-                  <p className="mt-1 text-xs text-muted-foreground/60">{t("chat_no_friends_desc")}</p>
+                  <p className="text-sm text-muted-foreground">Nenhum amigo ainda</p>
+                  <p className="mt-1 text-xs text-muted-foreground/60">Aceite matches para adicionar amigos!</p>
                 </div>
               )}
 
@@ -184,7 +177,7 @@ const FriendsSidebar = ({
                       <button
                         onClick={() => profile && setViewingProfile(profile)}
                         className="p-1.5 text-muted-foreground hover:text-primary transition-colors"
-                        title={t("chat_view_profile")}
+                        title="Ver perfil"
                       >
                         <Eye className="h-3.5 w-3.5" />
                       </button>
@@ -192,7 +185,7 @@ const FriendsSidebar = ({
                         <button
                           onClick={() => onOpenConversation(profile.user_id)}
                           className="p-1.5 text-muted-foreground hover:text-primary transition-colors"
-                          title={t("chat_send_message")}
+                          title="Enviar mensagem"
                         >
                           <MessageCircle className="h-3.5 w-3.5" />
                         </button>
@@ -201,7 +194,7 @@ const FriendsSidebar = ({
                         <button
                           onClick={() => setConfirmRemoveFriend(friend.id)}
                           className="p-1.5 text-muted-foreground hover:text-destructive transition-colors"
-                          title={t("chat_remove_friend")}
+                          title="Remover amigo"
                         >
                           <UserMinus className="h-3.5 w-3.5" />
                         </button>
@@ -221,20 +214,19 @@ const FriendsSidebar = ({
         onClose={() => setViewingProfile(null)}
       />
 
-      {/* Confirmation modals */}
       <ConfirmModal
         open={!!confirmDeleteConvo}
         onClose={() => setConfirmDeleteConvo(null)}
         onConfirm={handleConfirmDeleteConvo}
-        title={t("confirm_delete_convo_title")}
-        description={t("confirm_delete_convo_desc")}
+        title="Ocultar Conversa"
+        description="Deseja realmente ocultar esta conversa? Ela deixará de aparecer na sua lista."
       />
       <ConfirmModal
         open={!!confirmRemoveFriend}
         onClose={() => setConfirmRemoveFriend(null)}
         onConfirm={handleConfirmRemoveFriend}
-        title={t("confirm_remove_friend_title")}
-        description={t("confirm_remove_friend_desc")}
+        title="Remover Amigo"
+        description="Deseja remover este usuário da sua lista de amigos?"
       />
     </>
   );

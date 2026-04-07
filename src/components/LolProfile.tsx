@@ -1,6 +1,4 @@
-import { useState } from "react";
 import { motion } from "framer-motion";
-import { useI18n } from "@/contexts/I18nContext";
 import type { LolProfileResponse, LolMatch } from "@/hooks/useRiotMatches";
 import MatchHistoryCard from "@/components/MatchHistoryCard";
 import RankBadge from "@/components/RankBadge";
@@ -9,7 +7,6 @@ import { Progress } from "@/components/ui/progress";
 
 const DDRAGON_VERSION = "14.10.1";
 
-/** Compute per-champion stats from recent matches */
 const getChampionStats = (matches: LolMatch[]) => {
   const map: Record<string, { wins: number; losses: number; kills: number; deaths: number; assists: number; cs: number; damage: number; games: number; champion: string }> = {};
   matches.forEach((m) => {
@@ -27,31 +24,26 @@ const getChampionStats = (matches: LolMatch[]) => {
 };
 
 const LolProfile = ({ data }: { data: LolProfileResponse }) => {
-  const { t } = useI18n();
   const ranked = data.summoner?.ranked?.find((r) => r.queueType === "RANKED_SOLO_5x5");
   const flexRanked = data.summoner?.ranked?.find((r) => r.queueType === "RANKED_FLEX_SR");
   const totalMatches = data.recentMatches.length;
   const wins = data.recentMatches.filter((m) => m.win).length;
   const losses = totalMatches - wins;
 
-  // Averages
   const avg = (fn: (m: LolMatch) => number) => totalMatches ? (data.recentMatches.reduce((a, m) => a + fn(m), 0) / totalMatches) : 0;
   const avgKills = avg((m) => m.kills).toFixed(1);
   const avgDeaths = avg((m) => m.deaths).toFixed(1);
   const avgAssists = avg((m) => m.assists).toFixed(1);
-  const avgCs = avg((m) => m.cs).toFixed(0);
   const avgCsPerMin = totalMatches ? (data.recentMatches.reduce((a, m) => a + (m.duration > 0 ? m.cs / (m.duration / 60) : 0), 0) / totalMatches).toFixed(1) : "0";
   const avgDamage = avg((m) => m.damage);
   const avgGold = avg((m) => m.goldEarned);
   const avgVision = avg((m) => m.visionScore).toFixed(1);
   const avgKda = avg((m) => m.deaths === 0 ? (m.kills + m.assists) : (m.kills + m.assists) / m.deaths).toFixed(2);
 
-  // Best / worst
   const bestKda = totalMatches ? Math.max(...data.recentMatches.map((m) => m.deaths === 0 ? m.kills + m.assists : (m.kills + m.assists) / m.deaths)) : 0;
   const maxDamage = totalMatches ? Math.max(...data.recentMatches.map((m) => m.damage)) : 0;
   const maxCs = totalMatches ? Math.max(...data.recentMatches.map((m) => m.cs)) : 0;
 
-  // Win streak
   let currentStreak = 0;
   let streakType: "win" | "loss" = data.recentMatches[0]?.win ? "win" : "loss";
   for (const m of data.recentMatches) {
@@ -59,24 +51,21 @@ const LolProfile = ({ data }: { data: LolProfileResponse }) => {
     else break;
   }
 
-  // Champion stats from recent matches
   const champStats = getChampionStats(data.recentMatches);
 
   return (
     <>
-      {/* Summoner header */}
       {data.summoner && (
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="clip-angle border border-border gradient-card p-5">
           <div className="flex items-center gap-4">
             <img src={data.summoner.profileIconUrl} alt="Profile Icon" className="h-16 w-16 rounded-full border-2 border-primary/30" />
             <div className="flex-1">
               <h3 className="font-display text-lg font-bold tracking-wider text-foreground">{data.gameName}#{data.tagLine}</h3>
-              <p className="text-sm text-muted-foreground">{t("riot_level")} {data.summoner.level}</p>
+              <p className="text-sm text-muted-foreground">Nível {data.summoner.level}</p>
             </div>
             {ranked && <RankBadge tier={ranked.tier} rank={ranked.rank} lp={ranked.lp} winRate={ranked.winRate} wins={ranked.wins} losses={ranked.losses} size="lg" />}
           </div>
 
-          {/* Flex queue rank if exists */}
           {flexRanked && (
             <div className="mt-3 pt-3 border-t border-border/50 flex items-center gap-3">
               <span className="text-xs text-muted-foreground font-display tracking-wider">FLEX</span>
@@ -86,13 +75,12 @@ const LolProfile = ({ data }: { data: LolProfileResponse }) => {
         </motion.div>
       )}
 
-      {/* Primary stats grid */}
       <div className="grid grid-cols-4 gap-3">
         {[
-          { label: t("riot_matches"), value: totalMatches.toString(), icon: Swords },
-          { label: t("riot_wins"), value: `${wins}W ${losses}L`, icon: Trophy },
-          { label: t("riot_avg_kda"), value: `${avgKills}/${avgDeaths}/${avgAssists}`, icon: Target },
-          { label: t("riot_win_rate"), value: totalMatches ? `${Math.round((wins / totalMatches) * 100)}%` : "—", icon: Shield },
+          { label: "PARTIDAS", value: totalMatches.toString(), icon: Swords },
+          { label: "VITÓRIAS", value: `${wins}W ${losses}L`, icon: Trophy },
+          { label: "KDA MÉDIO", value: `${avgKills}/${avgDeaths}/${avgAssists}`, icon: Target },
+          { label: "WIN RATE", value: totalMatches ? `${Math.round((wins / totalMatches) * 100)}%` : "—", icon: Shield },
         ].map((stat) => (
           <motion.div key={stat.label} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="border border-border gradient-card p-3 text-center">
             <stat.icon className="mx-auto h-4 w-4 text-primary/60 mb-1" />
@@ -102,21 +90,19 @@ const LolProfile = ({ data }: { data: LolProfileResponse }) => {
         ))}
       </div>
 
-      {/* Advanced performance stats */}
       {totalMatches > 0 && (
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="border border-border gradient-card p-5 space-y-4">
           <h4 className="font-display text-xs tracking-[0.2em] text-muted-foreground flex items-center gap-2">
-            <BarChart3 className="h-3 w-3" /> {t("riot_performance")}
+            <BarChart3 className="h-3 w-3" /> DESEMPENHO
           </h4>
 
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-            <StatItem icon={<Flame className="h-4 w-4 text-orange-400" />} label={t("riot_avg_damage")} value={formatNumber(avgDamage)} />
-            <StatItem icon={<Coins className="h-4 w-4 text-yellow-400" />} label={t("riot_avg_gold")} value={formatNumber(avgGold)} />
-            <StatItem icon={<Eye className="h-4 w-4 text-blue-400" />} label={t("riot_avg_vision")} value={avgVision} />
-            <StatItem icon={<TrendingUp className="h-4 w-4 text-emerald-400" />} label={t("riot_cs_per_min")} value={avgCsPerMin} />
+            <StatItem icon={<Flame className="h-4 w-4 text-orange-400" />} label="DMG MÉDIO" value={formatNumber(avgDamage)} />
+            <StatItem icon={<Coins className="h-4 w-4 text-yellow-400" />} label="OURO MÉDIO" value={formatNumber(avgGold)} />
+            <StatItem icon={<Eye className="h-4 w-4 text-blue-400" />} label="VISÃO MÉDIA" value={avgVision} />
+            <StatItem icon={<TrendingUp className="h-4 w-4 text-emerald-400" />} label="CS/MIN" value={avgCsPerMin} />
           </div>
 
-          {/* KDA Rating */}
           <div className="flex items-center gap-3 pt-2 border-t border-border/50">
             <span className="text-xs text-muted-foreground font-display tracking-wider">KDA</span>
             <span className={`font-display text-lg font-bold ${parseFloat(avgKda) >= 3 ? "text-primary" : parseFloat(avgKda) >= 2 ? "text-yellow-400" : "text-destructive"}`}>
@@ -127,37 +113,34 @@ const LolProfile = ({ data }: { data: LolProfileResponse }) => {
             </div>
           </div>
 
-          {/* Streak */}
           {currentStreak >= 2 && (
             <div className={`flex items-center gap-2 text-sm font-display font-bold ${streakType === "win" ? "text-primary" : "text-destructive"}`}>
               {streakType === "win" ? <Trophy className="h-4 w-4" /> : <Shield className="h-4 w-4" />}
-              {currentStreak} {streakType === "win" ? t("riot_win_streak") : t("riot_loss_streak")}
+              {currentStreak} {streakType === "win" ? "vitórias seguidas" : "derrotas seguidas"}
             </div>
           )}
 
-          {/* Records */}
           <div className="grid grid-cols-3 gap-3 pt-2 border-t border-border/50">
             <div className="text-center">
-              <p className="text-xs text-muted-foreground font-display">{t("riot_best_kda")}</p>
+              <p className="text-xs text-muted-foreground font-display">MELHOR KDA</p>
               <p className="font-display text-sm font-bold text-foreground">{bestKda === Infinity ? "Perfect" : bestKda.toFixed(1)}</p>
             </div>
             <div className="text-center">
-              <p className="text-xs text-muted-foreground font-display">{t("riot_max_damage")}</p>
+              <p className="text-xs text-muted-foreground font-display">MAX DANO</p>
               <p className="font-display text-sm font-bold text-foreground">{formatNumber(maxDamage)}</p>
             </div>
             <div className="text-center">
-              <p className="text-xs text-muted-foreground font-display">{t("riot_max_cs")}</p>
+              <p className="text-xs text-muted-foreground font-display">MAX CS</p>
               <p className="font-display text-sm font-bold text-foreground">{maxCs}</p>
             </div>
           </div>
         </motion.div>
       )}
 
-      {/* Champion performance from recent matches */}
       {champStats.length > 0 && (
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-2">
           <h4 className="font-display text-xs tracking-[0.2em] text-muted-foreground flex items-center gap-2">
-            <BarChart3 className="h-3 w-3" /> {t("riot_champ_performance")}
+            <BarChart3 className="h-3 w-3" /> DESEMPENHO POR CAMPEÃO
           </h4>
           <div className="space-y-1.5">
             {champStats.slice(0, 5).map((cs) => {
@@ -173,7 +156,7 @@ const LolProfile = ({ data }: { data: LolProfileResponse }) => {
                   />
                   <div className="flex-1 min-w-0">
                     <p className="font-display text-sm font-bold text-foreground truncate">{cs.champion}</p>
-                    <p className="text-xs text-muted-foreground">{cs.games} {t("riot_games")} • {cs.wins}W {cs.losses}L</p>
+                    <p className="text-xs text-muted-foreground">{cs.games} partidas • {cs.wins}W {cs.losses}L</p>
                   </div>
                   <div className="text-right">
                     <p className={`font-display text-sm font-bold ${wr >= 60 ? "text-primary" : wr >= 50 ? "text-yellow-400" : "text-destructive"}`}>{wr}% WR</p>
@@ -189,11 +172,10 @@ const LolProfile = ({ data }: { data: LolProfileResponse }) => {
         </motion.div>
       )}
 
-      {/* Top mastery champions */}
       {data.topChampions.length > 0 && (
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-2">
           <h4 className="font-display text-xs tracking-[0.2em] text-muted-foreground flex items-center gap-2">
-            <Star className="h-3 w-3" /> {t("riot_top_champions")}
+            <Star className="h-3 w-3" /> CAMPEÕES MAIS JOGADOS
           </h4>
           <div className="grid grid-cols-5 gap-2">
             {data.topChampions.map((champ) => (
@@ -209,17 +191,16 @@ const LolProfile = ({ data }: { data: LolProfileResponse }) => {
         </motion.div>
       )}
 
-      {/* Recent Matches */}
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-2">
         <h4 className="font-display text-xs tracking-[0.2em] text-muted-foreground flex items-center gap-2">
-          <Swords className="h-3 w-3" /> {t("riot_recent_matches")}
+          <Swords className="h-3 w-3" /> PARTIDAS RECENTES
         </h4>
         <div className="space-y-1.5">
           {data.recentMatches.map((match) => (
             <MatchHistoryCard key={match.matchId} match={match} game="lol" />
           ))}
           {data.recentMatches.length === 0 && (
-            <p className="text-sm text-muted-foreground text-center py-4">{t("riot_no_matches")}</p>
+            <p className="text-sm text-muted-foreground text-center py-4">Nenhuma partida encontrada</p>
           )}
         </div>
       </motion.div>

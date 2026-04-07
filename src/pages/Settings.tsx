@@ -1,9 +1,8 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Settings, Globe, Palette, Trash2, Download, Loader2, ArrowLeft, Volume2, VolumeX } from "lucide-react";
+import { Settings, Palette, Trash2, Download, Loader2, ArrowLeft, Volume2, VolumeX } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import { useAuth } from "@/contexts/AuthContext";
-import { useI18n } from "@/contexts/I18nContext";
 import { useTheme } from "@/contexts/ThemeContext";
 import { isSoundEnabled, setSoundEnabled } from "@/lib/soundUtils";
 import { supabase } from "@/integrations/supabase/client";
@@ -11,12 +10,10 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
-import type { Locale } from "@/lib/i18n";
 
 const SettingsPage = () => {
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
-  const { locale, setLocale, t } = useI18n();
   const { theme, setTheme } = useTheme();
 
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -25,7 +22,7 @@ const SettingsPage = () => {
   const [downloading, setDownloading] = useState(false);
   const [soundOn, setSoundOn] = useState(isSoundEnabled());
 
-  const confirmWord = t("delete_confirm_word");
+  const confirmWord = "DELETAR";
 
   const handleToggleSound = () => {
     const next = !soundOn;
@@ -42,7 +39,7 @@ const SettingsPage = () => {
       await signOut();
       navigate("/");
     } catch {
-      toast.error(t("settings_delete_error"));
+      toast.error("Erro ao excluir conta");
     } finally {
       setDeleting(false);
     }
@@ -78,9 +75,9 @@ const SettingsPage = () => {
       a.download = `matchgaming-data-${new Date().toISOString().split("T")[0]}.json`;
       a.click();
       URL.revokeObjectURL(url);
-      toast.success(t("settings_download_success"));
+      toast.success("Dados exportados com sucesso!");
     } catch {
-      toast.error(t("settings_download_error"));
+      toast.error("Erro ao exportar dados");
     } finally {
       setDownloading(false);
     }
@@ -90,62 +87,31 @@ const SettingsPage = () => {
     <div className="min-h-screen bg-background">
       <Navbar />
       <div className="container max-w-2xl pt-24 pb-12">
-        {/* Header */}
         <div className="flex items-center gap-3 mb-8">
           <button onClick={() => navigate("/profile")} className="p-2 text-muted-foreground hover:text-foreground transition-colors">
             <ArrowLeft className="h-5 w-5" />
           </button>
           <Settings className="h-6 w-6 text-primary" />
           <h1 className="font-display text-2xl font-bold tracking-wider text-foreground">
-            {t("settings_title")}
+            CONFIGURAÇÕES
           </h1>
         </div>
 
         <div className="space-y-6">
-          {/* Preferences Section */}
           <section className="border border-border rounded-lg overflow-hidden">
             <div className="border-b border-border px-5 py-3 bg-muted/30">
               <h2 className="font-display text-sm tracking-widest text-muted-foreground">
-                {t("settings_preferences")}
+                Preferências
               </h2>
             </div>
 
-            {/* Language */}
-            <div className="px-5 py-4 border-b border-border/50">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <Globe className="h-5 w-5 text-primary/70" />
-                  <div>
-                    <p className="text-sm font-medium text-foreground">{t("settings_language")}</p>
-                    <p className="text-xs text-muted-foreground">{t("settings_language_desc")}</p>
-                  </div>
-                </div>
-                <div className="flex gap-2">
-                  {(["pt-BR", "en"] as Locale[]).map((l) => (
-                    <button
-                      key={l}
-                      onClick={() => setLocale(l)}
-                      className={`clip-angle-sm px-4 py-2 font-display text-xs tracking-wider transition-all ${
-                        locale === l
-                          ? "bg-primary text-primary-foreground"
-                          : "border border-border text-muted-foreground hover:text-foreground hover:border-primary/50"
-                      }`}
-                    >
-                      {l === "pt-BR" ? "PT-BR" : "EN"}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </div>
-
-            {/* Theme */}
             <div className="px-5 py-4 border-b border-border/50">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <Palette className="h-5 w-5 text-primary/70" />
                   <div>
-                    <p className="text-sm font-medium text-foreground">{t("settings_theme")}</p>
-                    <p className="text-xs text-muted-foreground">{t("settings_theme_desc")}</p>
+                    <p className="text-sm font-medium text-foreground">Tema</p>
+                    <p className="text-xs text-muted-foreground">Escolha a aparência da aplicação</p>
                   </div>
                 </div>
                 <div className="flex gap-2">
@@ -159,21 +125,20 @@ const SettingsPage = () => {
                           : "border border-border text-muted-foreground hover:text-foreground hover:border-primary/50"
                       }`}
                     >
-                      {th === "dark" ? t("settings_dark") : t("settings_light")}
+                      {th === "dark" ? "Escuro" : "Claro"}
                     </button>
                   ))}
                 </div>
               </div>
             </div>
 
-            {/* Sound */}
             <div className="px-5 py-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   {soundOn ? <Volume2 className="h-5 w-5 text-primary/70" /> : <VolumeX className="h-5 w-5 text-primary/70" />}
                   <div>
-                    <p className="text-sm font-medium text-foreground">{t("settings_sound")}</p>
-                    <p className="text-xs text-muted-foreground">{t("settings_sound_desc")}</p>
+                    <p className="text-sm font-medium text-foreground">Sons de notificação</p>
+                    <p className="text-xs text-muted-foreground">Sons ao encontrar match, aceitar e receber mensagens</p>
                   </div>
                 </div>
                 <button
@@ -190,11 +155,10 @@ const SettingsPage = () => {
             </div>
           </section>
 
-          {/* Account Section */}
           <section className="border border-border rounded-lg overflow-hidden">
             <div className="border-b border-border px-5 py-3 bg-muted/30">
               <h2 className="font-display text-sm tracking-widest text-muted-foreground">
-                {t("settings_account")}
+                Conta
               </h2>
             </div>
             <div className="px-5 py-4">
@@ -202,25 +166,24 @@ const SettingsPage = () => {
                 <div className="flex items-center gap-3">
                   <Trash2 className="h-5 w-5 text-destructive/70" />
                   <div>
-                    <p className="text-sm font-medium text-foreground">{t("settings_delete_account")}</p>
-                    <p className="text-xs text-muted-foreground">{t("settings_delete_desc")}</p>
+                    <p className="text-sm font-medium text-foreground">Excluir Conta</p>
+                    <p className="text-xs text-muted-foreground">Excluir permanentemente sua conta e todos os dados</p>
                   </div>
                 </div>
                 <button
                   onClick={() => setShowDeleteModal(true)}
                   className="clip-angle-sm border border-destructive/50 px-4 py-2 font-display text-xs tracking-wider text-destructive hover:bg-destructive/10 transition-all"
                 >
-                  {t("settings_delete_btn")}
+                  Excluir minha conta
                 </button>
               </div>
             </div>
           </section>
 
-          {/* Privacy Section */}
           <section className="border border-border rounded-lg overflow-hidden">
             <div className="border-b border-border px-5 py-3 bg-muted/30">
               <h2 className="font-display text-sm tracking-widest text-muted-foreground">
-                {t("settings_privacy")}
+                Privacidade
               </h2>
             </div>
             <div className="px-5 py-4">
@@ -228,8 +191,8 @@ const SettingsPage = () => {
                 <div className="flex items-center gap-3">
                   <Download className="h-5 w-5 text-primary/70" />
                   <div>
-                    <p className="text-sm font-medium text-foreground">{t("settings_download_data")}</p>
-                    <p className="text-xs text-muted-foreground">{t("settings_download_desc")}</p>
+                    <p className="text-sm font-medium text-foreground">Baixar meus dados</p>
+                    <p className="text-xs text-muted-foreground">Exporte todos os seus dados em formato JSON (LGPD)</p>
                   </div>
                 </div>
                 <button
@@ -240,10 +203,10 @@ const SettingsPage = () => {
                   {downloading ? (
                     <span className="flex items-center gap-1">
                       <Loader2 className="h-3 w-3 animate-spin" />
-                      {t("settings_downloading")}
+                      Gerando...
                     </span>
                   ) : (
-                    t("settings_download_btn")
+                    "Baixar dados"
                   )}
                 </button>
               </div>
@@ -252,17 +215,15 @@ const SettingsPage = () => {
         </div>
       </div>
 
-      {/* Delete Account Modal */}
       <Dialog open={showDeleteModal} onOpenChange={setShowDeleteModal}>
         <DialogContent className="border-border">
           <DialogHeader>
-            <DialogTitle className="text-destructive">{t("delete_title")}</DialogTitle>
-            <DialogDescription>{t("delete_desc")}</DialogDescription>
+            <DialogTitle className="text-destructive">Excluir Conta</DialogTitle>
+            <DialogDescription>Esta ação é irreversível. Todos os seus dados serão permanentemente deletados.</DialogDescription>
           </DialogHeader>
           <div className="space-y-3">
             <p className="text-sm text-muted-foreground">
-              {t("delete_confirm_text").replace("{word}", "")}
-              <span className="font-bold text-foreground">{confirmWord}</span>
+              Digite <span className="font-bold text-foreground">{confirmWord}</span> para confirmar:
             </p>
             <Input
               value={deleteConfirm}
@@ -273,11 +234,11 @@ const SettingsPage = () => {
           </div>
           <DialogFooter>
             <Button variant="ghost" onClick={() => { setShowDeleteModal(false); setDeleteConfirm(""); }}>
-              {t("delete_cancel")}
+              Cancelar
             </Button>
             <Button variant="destructive" disabled={deleteConfirm !== confirmWord || deleting} onClick={handleDeleteAccount}>
               {deleting && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
-              {t("delete_btn")}
+              Excluir permanentemente
             </Button>
           </DialogFooter>
         </DialogContent>

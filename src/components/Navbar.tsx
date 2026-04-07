@@ -2,19 +2,23 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import logo from "@/assets/logo.png";
 import { Users, MessageSquare, Crosshair, LogOut, User } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
-import { useI18n } from "@/contexts/I18nContext";
 
 const Navbar = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { user, profile, signOut } = useAuth();
-  const { t } = useI18n();
 
-  const navItems = [
-    { label: t("nav_home"), path: "/", icon: Crosshair },
-    { label: t("nav_matchmaking"), path: "/matchmaking", icon: Users },
-    { label: t("nav_chat"), path: "/chat", icon: MessageSquare },
+  const publicNavItems = [
+    { label: "Início", path: "/", icon: Crosshair },
   ];
+
+  const authNavItems = [
+    { label: "Início", path: "/", icon: Crosshair },
+    { label: "Matchmaking", path: "/matchmaking", icon: Users },
+    { label: "Chat", path: "/chat", icon: MessageSquare },
+  ];
+
+  const navItems = user ? authNavItems : publicNavItems;
 
   const handleSignOut = async () => {
     await signOut();
@@ -71,7 +75,7 @@ const Navbar = () => {
               className="clip-angle-sm bg-muted px-4 py-2 font-display text-sm font-semibold tracking-wider text-foreground transition-all hover:bg-destructive hover:text-destructive-foreground"
             >
               <LogOut className="h-4 w-4 sm:hidden" />
-              <span className="hidden sm:inline">{t("nav_signout")}</span>
+              <span className="hidden sm:inline">SAIR</span>
             </button>
           </div>
         ) : (
@@ -79,7 +83,7 @@ const Navbar = () => {
             to="/auth"
             className="clip-angle-sm bg-primary px-5 py-2 font-display text-sm font-semibold tracking-wider text-primary-foreground transition-all hover:box-glow-primary"
           >
-            {t("nav_signin")}
+            ENTRAR
           </Link>
         )}
       </div>

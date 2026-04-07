@@ -1,6 +1,5 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { useI18n } from "@/contexts/I18nContext";
 
 interface ConfirmModalProps {
   open: boolean;
@@ -23,8 +22,6 @@ const ConfirmModal = ({
   cancelLabel,
   destructive = true,
 }: ConfirmModalProps) => {
-  const { t } = useI18n();
-
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="max-w-sm border-border">
@@ -34,13 +31,13 @@ const ConfirmModal = ({
         </DialogHeader>
         <DialogFooter>
           <Button variant="ghost" onClick={onClose}>
-            {cancelLabel ?? t("confirm_cancel")}
+            {cancelLabel ?? "Cancelar"}
           </Button>
           <Button
             variant={destructive ? "destructive" : "default"}
             onClick={() => { onConfirm(); onClose(); }}
           >
-            {confirmLabel ?? t("confirm_action")}
+            {confirmLabel ?? "Confirmar"}
           </Button>
         </DialogFooter>
       </DialogContent>

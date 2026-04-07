@@ -7,7 +7,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { useI18n } from "@/contexts/I18nContext";
 import { Gamepad2, Mail, Lock, User, Chrome, Crosshair, Loader2 } from "lucide-react";
 import logo from "@/assets/logo.png";
 
@@ -15,7 +14,6 @@ const RIOT_ID_REGEX = /^.{3,16}#[A-Za-z0-9]{3,5}$/;
 
 const Auth = () => {
   const navigate = useNavigate();
-  const { t } = useI18n();
   const [isSignUp, setIsSignUp] = useState(false);
   const [loading, setLoading] = useState(false);
   const [email, setEmail] = useState("");
@@ -27,7 +25,7 @@ const Auth = () => {
   const validateRiotId = (value: string) => {
     if (!value) { setRiotIdError(""); return true; }
     if (!RIOT_ID_REGEX.test(value)) {
-      setRiotIdError(t("auth_riot_id_invalid"));
+      setRiotIdError("Formato inválido. Use Nome#TAG (ex: Player#BR1, Gamer#1234)");
       return false;
     }
     setRiotIdError("");
@@ -38,7 +36,7 @@ const Auth = () => {
     e.preventDefault();
     if (isSignUp && !validateRiotId(riotId)) return;
     if (isSignUp && !riotId.trim()) {
-      toast.error(t("auth_riot_id_required"));
+      toast.error("Riot ID é obrigatório.");
       return;
     }
     setLoading(true);
@@ -48,7 +46,7 @@ const Auth = () => {
         const { data: existingUser } = await supabase
           .from("profiles").select("id").eq("username", username.trim()).maybeSingle();
         if (existingUser) {
-          toast.error(t("profile_username_taken"));
+          toast.error("Este nome de usuário já está em uso.");
           setLoading(false);
           return;
         }
@@ -57,7 +55,7 @@ const Auth = () => {
           const { data: existingRiot } = await supabase
             .from("profiles").select("id").eq("riot_id", riotId.trim()).maybeSingle();
           if (existingRiot) {
-            toast.error(t("profile_riot_id_taken"));
+            toast.error("Este Riot ID já está vinculado a outra conta.");
             setLoading(false);
             return;
           }
@@ -71,18 +69,18 @@ const Auth = () => {
           },
         });
         if (error) throw error;
-        toast.success(t("auth_signup_success"), { duration: 6000 });
+        toast.success("Conta criada! Verifique seu email para confirmar.", { duration: 6000 });
       } else {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) {
           if (error.message.includes("Email not confirmed")) {
-            toast.error(t("auth_email_not_confirmed"));
+            toast.error("Email não confirmado. Verifique sua caixa de entrada.");
           } else {
             throw error;
           }
           return;
         }
-        toast.success(t("auth_welcome_back"));
+        toast.success("Bem-vindo de volta!");
         navigate("/");
       }
     } catch (error: any) {
@@ -100,10 +98,10 @@ const Auth = () => {
       });
       if (result.error) throw result.error;
       if (result.redirected) return;
-      toast.success(t("auth_google_success"));
+      toast.success("Login com Google realizado!");
       navigate("/");
     } catch (error: any) {
-      toast.error(error.message || t("auth_google_error"));
+      toast.error(error.message || "Falha no login com Google");
     } finally {
       setLoading(false);
     }
@@ -111,7 +109,6 @@ const Auth = () => {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background relative overflow-hidden">
-      {/* Background effects */}
       <div className="absolute inset-0 gradient-hero" />
       <div
         className="absolute inset-0 opacity-[0.03]"
@@ -121,7 +118,6 @@ const Auth = () => {
           backgroundSize: "50px 50px",
         }}
       />
-      {/* Glow orbs */}
       <div className="absolute top-1/4 left-1/4 w-64 h-64 rounded-full bg-primary/5 blur-[100px]" />
       <div className="absolute bottom-1/4 right-1/4 w-48 h-48 rounded-full bg-accent/5 blur-[80px]" />
 
@@ -132,7 +128,6 @@ const Auth = () => {
         className="relative z-10 w-full max-w-md mx-4"
       >
         <div className="rounded-2xl border border-border/60 bg-card/80 backdrop-blur-xl shadow-2xl shadow-primary/5 p-8 sm:p-10">
-          {/* Branding */}
           <div className="flex flex-col items-center gap-3 mb-8">
             <motion.img
               src={logo}
@@ -155,16 +150,15 @@ const Auth = () => {
                 className="text-center"
               >
                 <p className="font-display text-lg font-semibold tracking-wide text-foreground">
-                  {isSignUp ? t("auth_create_account") : t("auth_sign_in")}
+                  {isSignUp ? "CRIAR CONTA" : "ENTRAR"}
                 </p>
                 <p className="text-sm text-muted-foreground mt-1">
-                  {isSignUp ? t("auth_subtitle_signup") : t("auth_subtitle_signin")}
+                  {isSignUp ? "Entre na arena e encontre seus teammates" : "Bem-vindo de volta, jogador"}
                 </p>
               </motion.div>
             </AnimatePresence>
           </div>
 
-          {/* Google */}
           <Button
             onClick={handleGoogleSignIn}
             disabled={loading}
@@ -172,22 +166,20 @@ const Auth = () => {
             className="w-full h-12 gap-3 border-border/60 hover:bg-muted/80 hover:border-primary/30 transition-all text-base font-medium"
           >
             <Chrome className="h-5 w-5" />
-            {t("auth_google")}
+            Continuar com Google
           </Button>
 
-          {/* Divider */}
           <div className="relative my-7">
             <div className="absolute inset-0 flex items-center">
               <div className="w-full border-t border-border/50" />
             </div>
             <div className="relative flex justify-center">
               <span className="bg-card/80 px-3 text-sm text-muted-foreground font-display tracking-widest uppercase">
-                {t("auth_or")}
+                ou
               </span>
             </div>
           </div>
 
-          {/* Form */}
           <AnimatePresence mode="wait">
             <motion.form
               key={isSignUp ? "signup-form" : "signin-form"}
@@ -202,7 +194,7 @@ const Auth = () => {
                 <>
                   <div className="space-y-2">
                     <Label htmlFor="username" className="font-display text-sm tracking-wider text-muted-foreground">
-                      {t("auth_username")}
+                      NOME DE USUÁRIO
                     </Label>
                     <div className="relative">
                       <User className="absolute left-3.5 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground/60" />
@@ -219,7 +211,7 @@ const Auth = () => {
 
                   <div className="space-y-2">
                     <Label htmlFor="riotId" className="font-display text-sm tracking-wider text-muted-foreground">
-                      {t("auth_riot_id")} *
+                      RIOT ID *
                     </Label>
                     <div className="relative">
                       <Crosshair className="absolute left-3.5 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground/60" />
@@ -242,14 +234,14 @@ const Auth = () => {
                         {riotIdError}
                       </motion.p>
                     )}
-                    <p className="text-xs text-muted-foreground/60">{t("auth_riot_id_format")}</p>
+                    <p className="text-xs text-muted-foreground/60">Formato: Nome#TAG (3-5 caracteres alfanuméricos após #)</p>
                   </div>
                 </>
               )}
 
               <div className="space-y-2">
                 <Label htmlFor="email" className="font-display text-sm tracking-wider text-muted-foreground">
-                  {t("auth_email")}
+                  EMAIL
                 </Label>
                 <div className="relative">
                   <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground/60" />
@@ -267,7 +259,7 @@ const Auth = () => {
 
               <div className="space-y-2">
                 <Label htmlFor="password" className="font-display text-sm tracking-wider text-muted-foreground">
-                  {t("auth_password")}
+                  SENHA
                 </Label>
                 <div className="relative">
                   <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground/60" />
@@ -294,19 +286,18 @@ const Auth = () => {
                 ) : (
                   <Gamepad2 className="h-5 w-5 mr-2" />
                 )}
-                {loading ? t("auth_loading") : isSignUp ? t("auth_create_account") : t("auth_sign_in")}
+                {loading ? "CARREGANDO..." : isSignUp ? "CRIAR CONTA" : "ENTRAR"}
               </Button>
             </motion.form>
           </AnimatePresence>
 
-          {/* Toggle */}
           <p className="mt-7 text-center text-base text-muted-foreground">
-            {isSignUp ? t("auth_has_account") : t("auth_no_account")}{" "}
+            {isSignUp ? "Já tem uma conta?" : "Não tem uma conta?"}{" "}
             <button
               onClick={() => setIsSignUp(!isSignUp)}
               className="text-primary hover:underline font-semibold transition-colors"
             >
-              {isSignUp ? t("auth_switch_signin") : t("auth_switch_signup")}
+              {isSignUp ? "Entrar" : "Criar conta"}
             </button>
           </p>
         </div>
