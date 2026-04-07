@@ -151,27 +151,33 @@ export type Database = {
       matchmaking_queue: {
         Row: {
           created_at: string
+          desired_duo_role: string | null
           game: string
           id: string
           mode: string | null
+          my_role: string | null
           region: string
           status: string
           user_id: string
         }
         Insert: {
           created_at?: string
+          desired_duo_role?: string | null
           game: string
           id?: string
           mode?: string | null
+          my_role?: string | null
           region?: string
           status?: string
           user_id: string
         }
         Update: {
           created_at?: string
+          desired_duo_role?: string | null
           game?: string
           id?: string
           mode?: string | null
+          my_role?: string | null
           region?: string
           status?: string
           user_id?: string
