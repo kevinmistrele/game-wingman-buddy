@@ -1,74 +1,77 @@
 
 
-# Plano: Rank via API Riot + Abas e Gráficos no Perfil
+# Plano: Preferência de Rotas no Matchmaking (Final)
 
-## Contexto
+## 1. Database — Migration
 
-A edge function `riot-matches` já implementa o fluxo correto (Account-V1 → Summoner-V4 → League-V4) para buscar o rank. O rank já é retornado no campo `summoner.ranked`. O `ProfileCard` já consome esse dado e atualiza o perfil automaticamente. Portanto, **não há mudanças necessárias no backend para obter o rank** — já funciona.
+```sql
+ALTER TABLE public.matchmaking_queue
+  ADD COLUMN my_role text DEFAULT NULL
+    CHECK (my_role IN ('top','jungle','mid','adc','support') OR my_role IS NULL),
+  ADD COLUMN desired_duo_role text DEFAULT NULL
+    CHECK (desired_duo_role IN ('top','jungle','mid','adc','support') OR desired_duo_role IS NULL);
+```
 
-O foco principal é **reestruturar a página de perfil** com abas de navegação e gráficos de desempenho.
+## 2. Constantes (`src/lib/eloUtils.ts`)
 
----
+Adicionar `ROLES` array e tipo `Role`.
 
-## 1. Reestruturar a página de Perfil com abas
+## 3. Lógica de matching (`src/hooks/useMatchmaking.ts`)
 
-**Arquivo:** `src/pages/Profile.tsx`
+### `joinQueue(mode, myRole?, desiredDuoRole?)`
+- Modos não ranqueados: forçar `my_role = null`, `desired_duo_role = null`
+- Ranqueados: salvar valores informados
 
-Substituir o layout atual (ProfileCard + RiotProfileSection lado a lado) por um sistema de abas no painel direito:
+### Timer com reset garantido
+```typescript
+useEffect(() => {
+  if (status !== "searching") return;
+  setSearchPhase("strict"); // sempre reseta ao iniciar busca
+  const timer = setTimeout(() => setSearchPhase("expanded"), 30000);
+  return () => clearTimeout(timer);
+}, [status]);
+```
 
-- **Aba "Visão Geral"** — Resumo com card de rank (Solo/Duo e Flex), estatísticas gerais (KDA, WR, CS/min), top campeões, e streak
-- **Aba "Partidas"** — Histórico completo de partidas (MatchHistoryCard)
-- **Aba "Estatísticas"** — Gráficos de desempenho
-- **Aba "Campeões"** — Desempenho detalhado por campeão
+### Lógica de matching (linear e explícita)
+```typescript
+// 1. Rank é obrigatório
+if (!rankCompatible) return false;
 
-Usar o componente `Tabs` do shadcn/ui existente.
+// 2. Fase expandida ignora rotas
+if (searchPhase === "expanded") return true;
 
-## 2. Criar componente de gráficos
+// 3. Conflito de mesma rota
+const sameRoleConflict =
+  player.my_role && opponent.my_role
+  && player.my_role === opponent.my_role
+  && (player.desired_duo_role || opponent.desired_duo_role);
+if (sameRoleConflict) return false;
 
-**Novo arquivo:** `src/components/ProfileCharts.tsx`
+// 4. Compatibilidade de rotas
+const rolesOk =
+  (!player.desired_duo_role || opponent.my_role === player.desired_duo_role)
+  && (!opponent.desired_duo_role || player.my_role === opponent.desired_duo_role);
+return rolesOk;
+```
 
-Instalar `recharts` como dependência.
+### Estado exposto ao UI
+- `searchPhase: "strict" | "expanded"`
 
-Gráficos planejados:
-- **Win Rate ao longo das partidas** — Line chart mostrando % de vitórias acumuladas
-- **KDA por partida** — Bar chart com kills/deaths/assists empilhados
-- **Dano por partida** — Area chart com damage dealt
-- **CS/min por partida** — Line chart
-- **Distribuição de campeões** — Pie chart (top 5 campeões jogados)
+## 4. UI (`src/components/MatchmakingQueue.tsx`)
 
-Todos os gráficos usam dados já retornados pela API (`recentMatches`), sem chamadas extras.
-
-## 3. Separar componentes do LolProfile
-
-Refatorar `src/components/LolProfile.tsx` para extrair:
-
-- **`OverviewTab`** — Rank, stats médias, performance, streak (seção existente do LolProfile reorganizada)
-- **`MatchesTab`** — Lista de MatchHistoryCard
-- **`StatsTab`** — ProfileCharts (gráficos)
-- **`ChampionsTab`** — Tabela de desempenho por campeão + maestrias
-
-Esses componentes serão definidos inline ou em arquivos separados conforme complexidade.
-
-## 4. Manter o ProfileCard intacto
-
-O `ProfileCard` à esquerda permanece como está — já mostra rank automaticamente via API ou manual.
-
----
+- Dois selects opcionais ("Sua rota", "Rota do duo"), visíveis apenas em Solo/Duo e Flex
+- Default: "Qualquer" (null)
+- Feedback durante busca:
+  - Fase 1: `✔ Mesmo nível (Ouro) · ✔ Rota desejada (Mid)`
+  - Fase 2: `✔ Mesmo nível (Ouro) · ⚠ Qualquer rota`
+- Match encontrado: mostrar rota do oponente (se informada)
 
 ## Arquivos modificados
 
 | Arquivo | Ação |
 |---|---|
-| `package.json` | Adicionar `recharts` |
-| `src/pages/Profile.tsx` | Adicionar sistema de abas |
-| `src/components/LolProfile.tsx` | Refatorar em sub-componentes por aba |
-| `src/components/ProfileCharts.tsx` | Novo — gráficos com recharts |
-| `src/components/RiotProfileSection.tsx` | Adaptar para passar dados às abas |
-
-## Detalhes técnicos
-
-- `recharts` já é compatível com React 18 e Tailwind
-- Os gráficos usam cores do tema (CSS variables via `hsl(var(--primary))`)
-- Responsivo: abas empilham em mobile, gráficos usam `ResponsiveContainer`
-- Nenhuma chamada extra à API — todos os dados vêm do `useRiotProfile` existente
+| Migration SQL | `my_role`, `desired_duo_role` com CHECK |
+| `src/lib/eloUtils.ts` | `ROLES`, `Role` type |
+| `src/hooks/useMatchmaking.ts` | Rotas, matching linear, timer com reset |
+| `src/components/MatchmakingQueue.tsx` | Selects, badges, feedback de fase |
 
