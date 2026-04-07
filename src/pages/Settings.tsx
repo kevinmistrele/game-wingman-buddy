@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { Settings, Palette, Trash2, Download, Loader2, ArrowLeft, Volume2, VolumeX } from "lucide-react";
+import { Settings, Palette, Trash2, Download, Loader2, ArrowLeft, Volume2, VolumeX, ShieldBan, ChevronLeft, ChevronRight, UserX } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTheme } from "@/contexts/ThemeContext";
@@ -10,6 +10,16 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
+
+interface BlockedUser {
+  id: string;
+  blocked_id: string;
+  created_at: string;
+  profile?: { username: string; avatar_url: string | null };
+}
+
+const PAGE_SIZE = 10;
+const MAX_BLOCKED = 50;
 
 const SettingsPage = () => {
   const navigate = useNavigate();
@@ -22,7 +32,64 @@ const SettingsPage = () => {
   const [downloading, setDownloading] = useState(false);
   const [soundOn, setSoundOn] = useState(isSoundEnabled());
 
+  // Blocked users state
+  const [blockedUsers, setBlockedUsers] = useState<BlockedUser[]>([]);
+  const [blockedTotal, setBlockedTotal] = useState(0);
+  const [blockedPage, setBlockedPage] = useState(0);
+  const [loadingBlocked, setLoadingBlocked] = useState(false);
+  const [unblockingId, setUnblockingId] = useState<string | null>(null);
+
   const confirmWord = "DELETAR";
+
+  const fetchBlocked = useCallback(async () => {
+    if (!user) return;
+    setLoadingBlocked(true);
+    const offset = blockedPage * PAGE_SIZE;
+
+    const { count } = await supabase
+      .from("blocked_users")
+      .select("id", { count: "exact", head: true })
+      .eq("blocker_id", user.id);
+
+    setBlockedTotal(count ?? 0);
+
+    const { data } = await supabase
+      .from("blocked_users")
+      .select("id, blocked_id, created_at")
+      .eq("blocker_id", user.id)
+      .order("created_at", { ascending: false })
+      .range(offset, offset + PAGE_SIZE - 1);
+
+    if (data) {
+      const enriched: BlockedUser[] = [];
+      for (const b of data) {
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("username, avatar_url")
+          .eq("user_id", b.blocked_id)
+          .single();
+        enriched.push({ ...b, profile: profile ?? undefined });
+      }
+      setBlockedUsers(enriched);
+    }
+    setLoadingBlocked(false);
+  }, [user, blockedPage]);
+
+  useEffect(() => {
+    fetchBlocked();
+  }, [fetchBlocked]);
+
+  const handleUnblock = async (blockId: string) => {
+    setUnblockingId(blockId);
+    const { error } = await supabase.from("blocked_users").delete().eq("id", blockId);
+    if (error) {
+      toast.error("Erro ao desbloquear jogador.");
+    } else {
+      toast.success("Jogador desbloqueado.");
+      fetchBlocked();
+    }
+    setUnblockingId(null);
+  };
 
   const handleToggleSound = () => {
     const next = !soundOn;
@@ -83,6 +150,8 @@ const SettingsPage = () => {
     }
   };
 
+  const totalPages = Math.ceil(blockedTotal / PAGE_SIZE);
+
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
@@ -98,13 +167,11 @@ const SettingsPage = () => {
         </div>
 
         <div className="space-y-6">
+          {/* Preferências */}
           <section className="border border-border rounded-lg overflow-hidden">
             <div className="border-b border-border px-5 py-3 bg-muted/30">
-              <h2 className="font-display text-sm tracking-widest text-muted-foreground">
-                Preferências
-              </h2>
+              <h2 className="font-display text-sm tracking-widest text-muted-foreground">Preferências</h2>
             </div>
-
             <div className="px-5 py-4 border-b border-border/50">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
@@ -131,7 +198,6 @@ const SettingsPage = () => {
                 </div>
               </div>
             </div>
-
             <div className="px-5 py-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
@@ -155,36 +221,83 @@ const SettingsPage = () => {
             </div>
           </section>
 
+          {/* Usuários Bloqueados */}
           <section className="border border-border rounded-lg overflow-hidden">
             <div className="border-b border-border px-5 py-3 bg-muted/30">
-              <h2 className="font-display text-sm tracking-widest text-muted-foreground">
-                Conta
+              <h2 className="font-display text-sm tracking-widest text-muted-foreground flex items-center gap-2">
+                <ShieldBan className="h-4 w-4" />
+                Usuários Bloqueados
+                <span className="text-xs text-muted-foreground/60">({blockedTotal}/{MAX_BLOCKED})</span>
               </h2>
             </div>
             <div className="px-5 py-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <Trash2 className="h-5 w-5 text-destructive/70" />
-                  <div>
-                    <p className="text-sm font-medium text-foreground">Excluir Conta</p>
-                    <p className="text-xs text-muted-foreground">Excluir permanentemente sua conta e todos os dados</p>
-                  </div>
+              {loadingBlocked ? (
+                <div className="flex items-center justify-center py-6">
+                  <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
                 </div>
-                <button
-                  onClick={() => setShowDeleteModal(true)}
-                  className="clip-angle-sm border border-destructive/50 px-4 py-2 font-display text-xs tracking-wider text-destructive hover:bg-destructive/10 transition-all"
-                >
-                  Excluir minha conta
-                </button>
-              </div>
+              ) : blockedUsers.length === 0 ? (
+                <p className="text-sm text-muted-foreground text-center py-4">Nenhum usuário bloqueado.</p>
+              ) : (
+                <div className="space-y-2">
+                  {blockedUsers.map((b) => (
+                    <div key={b.id} className="flex items-center gap-3 p-3 rounded border border-border/50 hover:bg-muted/30 transition-colors">
+                      <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center font-display text-sm font-bold text-primary shrink-0">
+                        {b.profile?.avatar_url ? (
+                          <img src={b.profile.avatar_url} alt="" className="h-full w-full rounded-full object-cover" />
+                        ) : (
+                          b.profile?.username?.slice(0, 2).toUpperCase() ?? "??"
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-foreground truncate">{b.profile?.username ?? "Jogador"}</p>
+                      </div>
+                      <button
+                        onClick={() => handleUnblock(b.id)}
+                        disabled={unblockingId === b.id}
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded border border-border text-xs text-muted-foreground hover:text-foreground hover:border-primary/50 transition-colors disabled:opacity-50"
+                      >
+                        {unblockingId === b.id ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <UserX className="h-4 w-4" />
+                        )}
+                        <span className="font-display tracking-wide">Desbloquear</span>
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {totalPages > 1 && (
+                <div className="flex items-center justify-between mt-4 pt-3 border-t border-border/50">
+                  <button
+                    onClick={() => setBlockedPage((p) => Math.max(0, p - 1))}
+                    disabled={blockedPage === 0}
+                    className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground disabled:opacity-30 transition-colors"
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                    Anterior
+                  </button>
+                  <span className="text-xs text-muted-foreground">
+                    {blockedPage + 1} / {totalPages}
+                  </span>
+                  <button
+                    onClick={() => setBlockedPage((p) => Math.min(totalPages - 1, p + 1))}
+                    disabled={blockedPage >= totalPages - 1}
+                    className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground disabled:opacity-30 transition-colors"
+                  >
+                    Próximo
+                    <ChevronRight className="h-4 w-4" />
+                  </button>
+                </div>
+              )}
             </div>
           </section>
 
+          {/* Privacidade */}
           <section className="border border-border rounded-lg overflow-hidden">
             <div className="border-b border-border px-5 py-3 bg-muted/30">
-              <h2 className="font-display text-sm tracking-widest text-muted-foreground">
-                Privacidade
-              </h2>
+              <h2 className="font-display text-sm tracking-widest text-muted-foreground">Privacidade</h2>
             </div>
             <div className="px-5 py-4">
               <div className="flex items-center justify-between">
@@ -208,6 +321,30 @@ const SettingsPage = () => {
                   ) : (
                     "Baixar dados"
                   )}
+                </button>
+              </div>
+            </div>
+          </section>
+
+          {/* Conta */}
+          <section className="border border-border rounded-lg overflow-hidden">
+            <div className="border-b border-border px-5 py-3 bg-muted/30">
+              <h2 className="font-display text-sm tracking-widest text-muted-foreground">Conta</h2>
+            </div>
+            <div className="px-5 py-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <Trash2 className="h-5 w-5 text-destructive/70" />
+                  <div>
+                    <p className="text-sm font-medium text-foreground">Excluir Conta</p>
+                    <p className="text-xs text-muted-foreground">Excluir permanentemente sua conta e todos os dados</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setShowDeleteModal(true)}
+                  className="clip-angle-sm border border-destructive/50 px-4 py-2 font-display text-xs tracking-wider text-destructive hover:bg-destructive/10 transition-all"
+                >
+                  Excluir minha conta
                 </button>
               </div>
             </div>
