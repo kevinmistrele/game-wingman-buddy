@@ -128,6 +128,23 @@ export const useChat = () => {
     return () => { supabase.removeChannel(channel); };
   }, [user, fetchConversations]);
 
+  // Realtime listener for friendships changes (add/remove friend updates UI instantly)
+  useEffect(() => {
+    if (!user) return;
+    const channel = supabase
+      .channel("friendships-realtime")
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "friendships" }, () => {
+        fetchFriends();
+        fetchConversations();
+      })
+      .on("postgres_changes", { event: "DELETE", schema: "public", table: "friendships" }, () => {
+        fetchFriends();
+        fetchConversations();
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [user, fetchFriends, fetchConversations]);
+
   const sendMessage = useCallback(async (content: string) => {
     if (!user || !activeConversation || !content.trim()) return;
     await supabase.from("messages").insert({

@@ -12,6 +12,7 @@ const Chat = () => {
     conversations, friends, activeConversation, setActiveConversation,
     messages, sendMessage, loading, deleteConversation, removeFriend,
     blockUser, openConversationWithFriend,
+    refreshFriends, refreshConversations,
   } = useChat();
 
   const {
@@ -43,6 +44,8 @@ const Chat = () => {
   const handleAcceptRequest = async (requestId: string, senderId: string) => {
     await acceptRequest(requestId, senderId);
     refreshRequests();
+    await refreshFriends();
+    await refreshConversations();
   };
 
   return (
