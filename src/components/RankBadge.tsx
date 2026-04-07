@@ -13,14 +13,12 @@ const TIER_COLORS: Record<string, string> = {
   CHALLENGER: "text-secondary",
 };
 
-// Riot CDN for rank emblems
 const getRankEmblemUrl = (tier: string) =>
   `https://raw.communitydragon.org/latest/plugins/rcp-fe-lol-static-assets/global/default/images/ranked-mini-crests/${tier.toLowerCase()}.png`;
 
 interface RankBadgeProps {
   tier: string;
   rank?: string;
-  lp?: number;
   winRate?: number;
   wins?: number;
   losses?: number;
@@ -34,7 +32,7 @@ const sizeMap = {
   lg: { icon: "h-12 w-12", text: "text-lg", detail: "text-xs" },
 };
 
-const RankBadge = ({ tier, rank, lp, winRate, wins, losses, size = "md", showDetails = true }: RankBadgeProps) => {
+const RankBadge = ({ tier, rank, winRate, wins, losses, size = "md", showDetails = true }: RankBadgeProps) => {
   const s = sizeMap[size];
   const colorClass = TIER_COLORS[tier] ?? "text-foreground";
   const label = TIER_LABELS[tier] ?? tier;
@@ -51,12 +49,11 @@ const RankBadge = ({ tier, rank, lp, winRate, wins, losses, size = "md", showDet
         <p className={`font-display font-bold ${s.text} ${colorClass}`}>
           {label} {rank}
         </p>
-        {showDetails && lp !== undefined && (
+        {showDetails && (winRate !== undefined || (wins !== undefined && losses !== undefined)) && (
           <p className={`${s.detail} text-muted-foreground`}>
-            {lp} LP
-            {winRate !== undefined && ` • ${winRate}% WR`}
+            {winRate !== undefined && `${winRate}% WR`}
             {wins !== undefined && losses !== undefined && (
-              <span className="ml-1">{wins}V {losses}D</span>
+              <span>{winRate !== undefined ? " • " : ""}{wins}V {losses}D</span>
             )}
           </p>
         )}

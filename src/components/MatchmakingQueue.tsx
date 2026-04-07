@@ -107,7 +107,7 @@ const MatchmakingQueue = () => {
                 className="border border-border gradient-card px-6 py-3 text-center"
               >
                 <p className="font-display text-xs tracking-widest text-muted-foreground mb-2">SEU RANK</p>
-                <RankBadge tier={myRank.tier} rank={myRank.rank} lp={myRank.lp} winRate={myRank.winRate} size="lg" />
+                <RankBadge tier={myRank.tier} rank={myRank.rank} winRate={myRank.winRate} size="lg" />
                 {myRankSource === "manual" && (
                   <p className="text-xs text-muted-foreground/60 flex items-center justify-center gap-1 mt-1">
                     <AlertTriangle className="h-3 w-3" /> Rank definido manualmente
@@ -395,7 +395,7 @@ const MatchmakingQueue = () => {
                     </p>
                     {matchedPlayer.rank ? (
                       <>
-                        <RankBadge tier={matchedPlayer.rank.tier} rank={matchedPlayer.rank.rank} lp={matchedPlayer.rank.lp} winRate={matchedPlayer.rank.winRate} size="sm" />
+                        <RankBadge tier={matchedPlayer.rank.tier} rank={matchedPlayer.rank.rank} winRate={matchedPlayer.rank.winRate} size="sm" />
                         {matchedPlayer.rankSource === "manual" && (
                           <p className="text-xs text-muted-foreground/50">Rank manual</p>
                         )}

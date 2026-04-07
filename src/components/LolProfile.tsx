@@ -63,13 +63,13 @@ const LolProfile = ({ data }: { data: LolProfileResponse }) => {
               <h3 className="font-display text-lg font-bold tracking-wider text-foreground">{data.gameName}#{data.tagLine}</h3>
               <p className="text-sm text-muted-foreground">Nível {data.summoner.level}</p>
             </div>
-            {ranked && <RankBadge tier={ranked.tier} rank={ranked.rank} lp={ranked.lp} winRate={ranked.winRate} wins={ranked.wins} losses={ranked.losses} size="lg" />}
+            {ranked && <RankBadge tier={ranked.tier} rank={ranked.rank} winRate={ranked.winRate} wins={ranked.wins} losses={ranked.losses} size="lg" />}
           </div>
 
           {flexRanked && (
             <div className="mt-3 pt-3 border-t border-border/50 flex items-center gap-3">
               <span className="text-xs text-muted-foreground font-display tracking-wider">FLEX</span>
-              <RankBadge tier={flexRanked.tier} rank={flexRanked.rank} lp={flexRanked.lp} winRate={flexRanked.winRate} wins={flexRanked.wins} losses={flexRanked.losses} size="sm" />
+              <RankBadge tier={flexRanked.tier} rank={flexRanked.rank} winRate={flexRanked.winRate} wins={flexRanked.wins} losses={flexRanked.losses} size="sm" />
             </div>
           )}
         </motion.div>
