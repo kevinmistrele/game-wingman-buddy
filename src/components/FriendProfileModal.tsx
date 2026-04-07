@@ -87,7 +87,7 @@ const FriendProfileModal = ({ profile, open, onClose }: FriendProfileModalProps)
                 <RankBadge
                   tier={profile.rank_tier!}
                   rank={profile.rank_division ?? "IV"}
-                  lp={0}
+                 
                   winRate={0}
                   size="md"
                 />

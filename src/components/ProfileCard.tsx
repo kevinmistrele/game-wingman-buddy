@@ -177,7 +177,7 @@ const ProfileCard = () => {
               )}
               {effectiveRank ? (
                 <div className="mt-1">
-                  <RankBadge tier={effectiveRank.tier} rank={effectiveRank.division} lp={effectiveRank.lp} winRate={effectiveRank.winRate} size="sm" />
+                  <RankBadge tier={effectiveRank.tier} rank={effectiveRank.division} winRate={effectiveRank.winRate} size="sm" />
                   {effectiveRank.source === "manual" && (
                     <p className="text-xs text-muted-foreground/60 flex items-center gap-1 mt-0.5">
                       <AlertTriangle className="h-3 w-3" /> Rank definido manualmente
@@ -232,7 +232,7 @@ const ProfileCard = () => {
                 <p className="text-xs text-muted-foreground flex items-center gap-1">
                   ✓ Rank obtido automaticamente via Riot API
                 </p>
-                <RankBadge tier={riotRank!.tier} rank={riotRank!.rank} lp={riotRank!.lp} winRate={riotRank!.winRate} size="sm" />
+                <RankBadge tier={riotRank!.tier} rank={riotRank!.rank} winRate={riotRank!.winRate} size="sm" />
               </div>
             )}
 
