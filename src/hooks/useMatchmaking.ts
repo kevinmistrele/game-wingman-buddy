@@ -170,21 +170,29 @@ export const useMatchmaking = () => {
             }
           } else if (match.status === "accepted") {
             const [id1, id2] = [match.user1_id, match.user2_id].sort();
-            const { data: existingConvo } = await supabase
-              .from("conversations").select("id, hidden_by").eq("user1_id", id1).eq("user2_id", id2).limit(1).single();
-            if (existingConvo) {
-              // Unhide if needed
-              const hiddenBy: string[] = existingConvo.hidden_by ?? [];
-              if (user && hiddenBy.includes(user.id)) {
-                const newHidden = hiddenBy.filter((uid: string) => uid !== user.id);
-                await supabase.from("conversations").update({ hidden_by: newHidden }).eq("id", existingConvo.id);
+            // Retry up to 3 times with delay to handle race condition
+            let convoId: string | null = null;
+            for (let attempt = 0; attempt < 3; attempt++) {
+              const { data: existingConvo } = await supabase
+                .from("conversations").select("id, hidden_by").eq("user1_id", id1).eq("user2_id", id2).limit(1).single();
+              if (existingConvo) {
+                const hiddenBy: string[] = existingConvo.hidden_by ?? [];
+                if (user && hiddenBy.includes(user.id)) {
+                  const newHidden = hiddenBy.filter((uid: string) => uid !== user.id);
+                  await supabase.from("conversations").update({ hidden_by: newHidden }).eq("id", existingConvo.id);
+                }
+                convoId = existingConvo.id;
+                break;
               }
-              setAcceptedConvoId(existingConvo.id);
-            } else {
+              if (attempt < 2) await new Promise(r => setTimeout(r, 500));
+            }
+            // If still not found, create it as fallback
+            if (!convoId) {
               const { data: newConvo } = await supabase
                 .from("conversations").insert({ user1_id: id1, user2_id: id2, match_id: match.id }).select().single();
-              if (newConvo) setAcceptedConvoId(newConvo.id);
+              if (newConvo) convoId = newConvo.id;
             }
+            if (convoId) setAcceptedConvoId(convoId);
             setStatus("idle");
           } else if (match.status === "declined" || match.status === "expired") {
             setStatus("idle"); setCurrentMatch(null); setMatchedPlayer(null); setOtherAccepted(false);
@@ -311,18 +319,17 @@ export const useMatchmaking = () => {
       if (otherStatus === "accepted") updateData.status = "accepted";
     }
 
-    await supabase.from("matches").update(updateData).eq("id", currentMatch.id);
-
+    // If both accepted, create conversation BEFORE updating match status
+    // This prevents the race condition where the other player's realtime handler
+    // fires before the conversation exists
     if (updateData.status === "accepted") {
       const [id1, id2] = [currentMatch.user1_id, currentMatch.user2_id].sort();
-      // Check for existing conversation first to avoid duplicates
+      let convoId: string | null = null;
       const { data: existingConvo } = await supabase
         .from("conversations").select("id, hidden_by").eq("user1_id", id1).eq("user2_id", id2).limit(1).single();
       
-      let convoId: string | null = null;
       if (existingConvo) {
         convoId = existingConvo.id;
-        // Unhide if hidden by current user
         const hiddenBy: string[] = existingConvo.hidden_by ?? [];
         if (hiddenBy.includes(user.id)) {
           const newHidden = hiddenBy.filter((uid: string) => uid !== user.id);
@@ -333,11 +340,16 @@ export const useMatchmaking = () => {
           .from("conversations").insert({ user1_id: id1, user2_id: id2, match_id: currentMatch.id }).select().single();
         convoId = newConvo?.id ?? null;
       }
-      
+
+      // Now update match status — the other player's realtime handler will find the conversation
+      await supabase.from("matches").update(updateData).eq("id", currentMatch.id);
+
       if (convoId) setAcceptedConvoId(convoId);
       setStatus("idle");
       return convoId;
     }
+
+    await supabase.from("matches").update(updateData).eq("id", currentMatch.id);
 
     if (!accepted) { setStatus("idle"); setCurrentMatch(null); setMatchedPlayer(null); setOtherAccepted(false); }
     return null;
