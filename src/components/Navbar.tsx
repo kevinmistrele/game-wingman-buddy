@@ -32,7 +32,7 @@ const Navbar = () => {
   return (
     <>
       <nav className="fixed top-0 left-0 right-0 z-50 border-b border-border bg-background/80 backdrop-blur-xl">
-        <div className="container flex h-16 items-center justify-between">
+        <div className="container flex h-16 items-center justify-between relative">
           <Link to="/" className="flex items-center gap-2">
             <img src={logo} alt="MatchGaming" className="h-10 w-10" />
             <span className="font-display text-lg font-bold tracking-wider text-primary">
@@ -41,7 +41,7 @@ const Navbar = () => {
           </Link>
 
           {/* Desktop nav */}
-          <div className="hidden md:flex items-center gap-1">
+          <div className="hidden md:flex items-center gap-1 absolute left-1/2 -translate-x-1/2">
             {navItems.map((item) => {
               const isActive = location.pathname === item.path;
               return (
