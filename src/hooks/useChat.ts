@@ -175,19 +175,22 @@ export const useChat = () => {
     setFriends((prev) => prev.filter((f) => f.id !== friendshipId));
 
     if (friendUserId) {
-      const associatedConvos = conversations.filter((c) => {
-        const otherUserId = c.user1_id === user.id ? c.user2_id : c.user1_id;
-        return otherUserId === friendUserId;
-      });
+      // Find all conversations between these two users
+      const [id1, id2] = [user.id, friendUserId].sort();
+      const { data: allConvos } = await supabase
+        .from("conversations")
+        .select("id")
+        .eq("user1_id", id1)
+        .eq("user2_id", id2);
 
-      for (const convo of associatedConvos) {
-        const currentHidden: string[] = convo.hidden_by ?? [];
-        if (!currentHidden.includes(user.id)) {
-          const newHidden = [...currentHidden, user.id];
-          await supabase
-            .from("conversations")
-            .update({ hidden_by: newHidden })
-            .eq("id", convo.id);
+      if (allConvos && allConvos.length > 0) {
+        const convoIds = allConvos.map((c) => c.id);
+        // Delete all messages first, then conversations
+        for (const cid of convoIds) {
+          await supabase.from("messages").delete().eq("conversation_id", cid);
+        }
+        for (const cid of convoIds) {
+          await supabase.from("conversations").delete().eq("id", cid);
         }
       }
 
@@ -225,19 +228,20 @@ export const useChat = () => {
     await supabase.from("friend_requests").delete()
       .or(`and(sender_id.eq.${user.id},receiver_id.eq.${blockedUserId}),and(sender_id.eq.${blockedUserId},receiver_id.eq.${user.id})`);
 
-    // Hide conversations
-    const associatedConvos = conversations.filter((c) => {
-      const otherUserId = c.user1_id === user.id ? c.user2_id : c.user1_id;
-      return otherUserId === blockedUserId;
-    });
+    // Delete all conversations and messages between the two users
+    const { data: allConvos } = await supabase
+      .from("conversations")
+      .select("id")
+      .eq("user1_id", id1)
+      .eq("user2_id", id2);
 
-    for (const convo of associatedConvos) {
-      const currentHidden: string[] = convo.hidden_by ?? [];
-      if (!currentHidden.includes(user.id)) {
-        await supabase
-          .from("conversations")
-          .update({ hidden_by: [...currentHidden, user.id] })
-          .eq("id", convo.id);
+    if (allConvos && allConvos.length > 0) {
+      const convoIds = allConvos.map((c) => c.id);
+      for (const cid of convoIds) {
+        await supabase.from("messages").delete().eq("conversation_id", cid);
+      }
+      for (const cid of convoIds) {
+        await supabase.from("conversations").delete().eq("id", cid);
       }
     }
 
