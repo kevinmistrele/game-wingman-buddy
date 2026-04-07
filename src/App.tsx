@@ -26,6 +26,7 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
 
 const OnboardingGuard = () => {
   const { user, needsOnboarding, completeOnboarding } = useAuth();
+  useOnlineStatus();
   if (!needsOnboarding || !user) return null;
 
   const defaultUsername = user.email?.split("@")[0] ?? "";
