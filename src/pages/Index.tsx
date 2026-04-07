@@ -1,24 +1,21 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Link } from "react-router-dom";
-import GameCard from "@/components/GameCard";
 import Navbar from "@/components/Navbar";
-import { useI18n } from "@/contexts/I18nContext";
 import { useAuth } from "@/contexts/AuthContext";
 import lolHero from "@/assets/lol-hero.jpg";
-import valorantHero from "@/assets/valorant-hero.jpg";
 import {
   Zap, Users, MessageSquare, UserPlus, Search, Handshake, Gamepad2,
   Shield, Cpu, MessagesSquare, Swords, CheckCircle2,
 } from "lucide-react";
 
 const MOCK_PLAYERS = [
-  { name: "ShadowKnight", rank: "Gold II", game: "LoL", avatar: "SK" },
-  { name: "NeonViper", rank: "Platinum I", game: "Valorant", avatar: "NV" },
-  { name: "IronFist99", rank: "Diamond IV", game: "LoL", avatar: "IF" },
-  { name: "PhoenixRush", rank: "Silver III", game: "Valorant", avatar: "PR" },
-  { name: "ArcticWolf", rank: "Gold I", game: "LoL", avatar: "AW" },
-  { name: "CyberBlade", rank: "Platinum III", game: "Valorant", avatar: "CB" },
+  { name: "ShadowKnight", rank: "Gold II", avatar: "SK" },
+  { name: "IronFist99", rank: "Diamond IV", avatar: "IF" },
+  { name: "ArcticWolf", rank: "Gold I", avatar: "AW" },
+  { name: "StormBreaker", rank: "Platinum III", avatar: "SB" },
+  { name: "DarkFlame", rank: "Silver I", avatar: "DF" },
+  { name: "LunarBlade", rank: "Emerald II", avatar: "LB" },
 ];
 
 const FloatingParticle = ({ delay, x, size }: { delay: number; x: number; size: number }) => (
@@ -32,14 +29,17 @@ const FloatingParticle = ({ delay, x, size }: { delay: number; x: number; size: 
 );
 
 const Index = () => {
-  const { t } = useI18n();
   const { user } = useAuth();
   const [activityIndex, setActivityIndex] = useState(0);
-  const [matchStep, setMatchStep] = useState(0); // 0=searching, 1=found
+  const [matchStep, setMatchStep] = useState(0);
 
   const activities = [
-    t("home_activity_1"), t("home_activity_2"), t("home_activity_3"),
-    t("home_activity_4"), t("home_activity_5"), t("home_activity_6"),
+    "🎮 Match iniciado agora — Gold II vs Gold III",
+    "⚡ Jogador encontrado em 8s — Platina I",
+    "🔥 +1 jogador entrou na fila — Diamante IV",
+    "🎯 Match aceito — Prata III vs Prata II",
+    "✨ Novo jogador se cadastrou — bem-vindo!",
+    "⚔️ Duo formado — Ouro I + Ouro II",
   ];
 
   useEffect(() => {
@@ -57,17 +57,17 @@ const Index = () => {
   }, []);
 
   const steps = [
-    { icon: UserPlus, title: t("home_step_1_title"), desc: t("home_step_1_desc") },
-    { icon: Search, title: t("home_step_2_title"), desc: t("home_step_2_desc") },
-    { icon: Handshake, title: t("home_step_3_title"), desc: t("home_step_3_desc") },
-    { icon: Gamepad2, title: t("home_step_4_title"), desc: t("home_step_4_desc") },
+    { icon: UserPlus, title: "Crie sua conta", desc: "Cadastre-se e vincule seu Riot ID" },
+    { icon: Search, title: "Entre na fila", desc: "Escolha o modo de matchmaking" },
+    { icon: Handshake, title: "Encontre seu par", desc: "Nosso sistema encontra jogadores compatíveis" },
+    { icon: Gamepad2, title: "Jogue junto", desc: "Converse pelo chat e dominem juntos" },
   ];
 
   const highlights = [
-    { icon: Cpu, title: t("home_highlight_1_title"), desc: t("home_highlight_1_desc") },
-    { icon: Shield, title: t("home_highlight_2_title"), desc: t("home_highlight_2_desc") },
-    { icon: MessagesSquare, title: t("home_highlight_3_title"), desc: t("home_highlight_3_desc") },
-    { icon: MessageSquare, title: t("home_highlight_4_title"), desc: t("home_highlight_4_desc") },
+    { icon: Cpu, title: "Matchmaking Inteligente", desc: "Sistema baseado em elo para encontrar jogadores do seu nível" },
+    { icon: Shield, title: "Integração Riot", desc: "Rank e estatísticas obtidos automaticamente via Riot API" },
+    { icon: MessagesSquare, title: "Chat Direto", desc: "Converse com seus matches em tempo real dentro da plataforma" },
+    { icon: MessageSquare, title: "Integração Discord", desc: "Compartilhe e copie tags Discord facilmente para jogar" },
   ];
 
   const particles = Array.from({ length: 12 }, (_, i) => ({
@@ -80,7 +80,6 @@ const Index = () => {
     <div className="min-h-screen bg-background">
       <Navbar />
 
-      {/* Hero with particles */}
       <section className="relative flex min-h-[75vh] items-center justify-center overflow-hidden pt-16">
         <div className="absolute inset-0 gradient-hero" />
         <div
@@ -91,7 +90,6 @@ const Index = () => {
             backgroundSize: "60px 60px",
           }}
         />
-        {/* Floating particles */}
         {particles.map((p, i) => (
           <FloatingParticle key={i} {...p} />
         ))}
@@ -103,17 +101,17 @@ const Index = () => {
             transition={{ duration: 0.8 }}
           >
             <h1 className="font-display text-5xl font-bold tracking-wider text-foreground md:text-7xl">
-              {t("home_title_1")}
+              ENCONTRE SEU
               <motion.span
                 className="block text-primary text-glow-primary"
                 animate={{ opacity: [0.85, 1, 0.85] }}
                 transition={{ duration: 3, repeat: Infinity }}
               >
-                {t("home_title_2")}
+                PRÓXIMO TEAMMATE
               </motion.span>
             </h1>
             <p className="mx-auto mt-4 max-w-lg text-muted-foreground">
-              {t("home_subtitle")}
+              Conecte-se com jogadores que combinam com seu estilo. Entre na fila, encontre seu par e dominem juntos.
             </p>
           </motion.div>
 
@@ -124,9 +122,9 @@ const Index = () => {
             className="mx-auto mt-10 flex max-w-md items-center justify-center gap-8"
           >
             {[
-              { icon: Users, value: "2.4K", label: t("home_online") },
-              { icon: Zap, value: "< 30s", label: t("home_avg_queue") },
-              { icon: MessageSquare, value: "12K", label: t("home_matches_today") },
+              { icon: Users, value: "2.4K", label: "Online" },
+              { icon: Zap, value: "< 30s", label: "Fila Média" },
+              { icon: MessageSquare, value: "12K", label: "Matches Hoje" },
             ].map((stat) => (
               <div key={stat.label} className="text-center">
                 <stat.icon className="mx-auto h-5 w-5 text-primary/60" />
@@ -138,7 +136,6 @@ const Index = () => {
             ))}
           </motion.div>
 
-          {/* CTA with pulse */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -149,7 +146,7 @@ const Index = () => {
               to={user ? "/matchmaking" : "/auth"}
               className="group clip-angle-sm relative inline-block bg-primary px-10 py-3.5 font-display text-sm font-semibold tracking-wider text-primary-foreground transition-all hover:box-glow-primary hover:scale-105 active:scale-95"
             >
-              <span className="relative z-10">{user ? t("home_cta") : t("home_cta_signin")}</span>
+              <span className="relative z-10">{user ? "COMEÇAR AGORA" : "ENTRAR"}</span>
               <motion.span
                 className="absolute inset-0 bg-primary/30 clip-angle-sm"
                 animate={{ scale: [1, 1.15, 1], opacity: [0.5, 0, 0.5] }}
@@ -158,7 +155,6 @@ const Index = () => {
             </Link>
           </motion.div>
 
-          {/* Live activity ticker */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -181,7 +177,6 @@ const Index = () => {
         </div>
       </section>
 
-      {/* About */}
       <section className="container py-20 text-center">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -189,15 +184,14 @@ const Index = () => {
           viewport={{ once: true }}
         >
           <h2 className="font-display text-sm tracking-[0.3em] text-muted-foreground">
-            {t("home_about_title")}
+            O QUE É O MATCHGAMING?
           </h2>
           <p className="mx-auto mt-4 max-w-2xl text-lg text-foreground/80">
-            {t("home_about_desc")}
+            Uma plataforma que conecta jogadores de League of Legends com base em elo e preferências, para que você encontre o parceiro ideal.
           </p>
         </motion.div>
       </section>
 
-      {/* Match Preview Demo */}
       <section className="container py-16">
         <motion.h2
           initial={{ opacity: 0 }}
@@ -205,7 +199,7 @@ const Index = () => {
           viewport={{ once: true }}
           className="text-center font-display text-sm tracking-[0.3em] text-muted-foreground mb-10"
         >
-          {t("home_match_preview_title")}
+          PREVIEW DE MATCH
         </motion.h2>
         <motion.div
           initial={{ opacity: 0, scale: 0.95 }}
@@ -214,7 +208,6 @@ const Index = () => {
           className="mx-auto max-w-lg clip-angle border border-border gradient-card p-8"
         >
           <div className="flex items-center justify-between">
-            {/* Player 1 */}
             <motion.div
               className="text-center flex-1"
               animate={{ x: matchStep === 1 ? 10 : 0 }}
@@ -225,10 +218,8 @@ const Index = () => {
               </div>
               <p className="mt-2 font-display text-sm font-bold text-foreground">ShadowKnight</p>
               <p className="text-xs text-primary">Gold II</p>
-              <p className="text-xs text-muted-foreground">LoL</p>
             </motion.div>
 
-            {/* VS / Status */}
             <div className="flex-shrink-0 mx-4 text-center">
               <AnimatePresence mode="wait">
                 {matchStep === 0 ? (
@@ -244,7 +235,7 @@ const Index = () => {
                       transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
                     />
                     <p className="mt-2 font-display text-xs tracking-widest text-muted-foreground">
-                      {t("mm_searching")}...
+                      BUSCANDO...
                     </p>
                   </motion.div>
                 ) : (
@@ -262,31 +253,28 @@ const Index = () => {
                       <CheckCircle2 className="mx-auto h-10 w-10 text-primary" />
                     </motion.div>
                     <p className="mt-2 font-display text-xs font-bold tracking-wider text-primary text-glow-primary">
-                      {t("home_match_found")}
+                      MATCH ENCONTRADO!
                     </p>
                   </motion.div>
                 )}
               </AnimatePresence>
             </div>
 
-            {/* Player 2 */}
             <motion.div
               className="text-center flex-1"
               animate={{ x: matchStep === 1 ? -10 : 0 }}
               transition={{ type: "spring", stiffness: 200 }}
             >
               <div className="mx-auto h-14 w-14 rounded-full border-2 border-secondary/40 bg-muted flex items-center justify-center font-display text-lg font-bold text-secondary">
-                NV
+                IF
               </div>
-              <p className="mt-2 font-display text-sm font-bold text-foreground">NeonViper</p>
+              <p className="mt-2 font-display text-sm font-bold text-foreground">IronFist99</p>
               <p className="text-xs text-secondary">Gold III</p>
-              <p className="text-xs text-muted-foreground">LoL</p>
             </motion.div>
           </div>
         </motion.div>
       </section>
 
-      {/* How it works */}
       <section className="container py-16">
         <motion.h2
           initial={{ opacity: 0 }}
@@ -294,7 +282,7 @@ const Index = () => {
           viewport={{ once: true }}
           className="text-center font-display text-sm tracking-[0.3em] text-muted-foreground mb-12"
         >
-          {t("home_how_title")}
+          COMO FUNCIONA
         </motion.h2>
         <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
           {steps.map((step, i) => (
@@ -322,7 +310,6 @@ const Index = () => {
         </div>
       </section>
 
-      {/* Highlights */}
       <section className="container py-16">
         <motion.h2
           initial={{ opacity: 0 }}
@@ -330,7 +317,7 @@ const Index = () => {
           viewport={{ once: true }}
           className="text-center font-display text-sm tracking-[0.3em] text-muted-foreground mb-12"
         >
-          {t("home_highlights_title")}
+          POR QUE MATCHGAMING?
         </motion.h2>
         <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
           {highlights.map((h, i) => (
@@ -353,7 +340,6 @@ const Index = () => {
         </div>
       </section>
 
-      {/* Mock Players */}
       <section className="container py-16">
         <motion.h2
           initial={{ opacity: 0 }}
@@ -361,7 +347,7 @@ const Index = () => {
           viewport={{ once: true }}
           className="text-center font-display text-sm tracking-[0.3em] text-muted-foreground mb-10"
         >
-          {t("home_mock_players_title")}
+          JOGADORES NA PLATAFORMA
         </motion.h2>
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 max-w-4xl mx-auto">
           {MOCK_PLAYERS.map((player, i) => (
@@ -379,7 +365,7 @@ const Index = () => {
               </div>
               <div className="flex-1 min-w-0">
                 <p className="font-display text-sm font-bold text-foreground truncate">{player.name}</p>
-                <p className="text-xs text-muted-foreground">{player.game}</p>
+                <p className="text-xs text-muted-foreground">League of Legends</p>
               </div>
               <div className="text-right">
                 <p className="font-display text-xs font-semibold text-primary">{player.rank}</p>
@@ -393,7 +379,7 @@ const Index = () => {
         </div>
       </section>
 
-      {/* Game Selection */}
+      {/* Game Selection - Only LoL */}
       <section className="container py-20">
         <motion.h2
           initial={{ opacity: 0 }}
@@ -401,25 +387,41 @@ const Index = () => {
           viewport={{ once: true }}
           className="text-center font-display text-sm tracking-[0.3em] text-muted-foreground"
         >
-          {t("home_select_game")}
+          NOSSO JOGO
         </motion.h2>
-        <div className="mt-8 grid gap-6 md:grid-cols-2">
-          <GameCard
-            title={t("mm_lol")}
-            image={lolHero}
-            accentClass="primary"
-            description={t("home_lol_desc")}
-          />
-          <GameCard
-            title={t("mm_valorant")}
-            image={valorantHero}
-            accentClass="secondary"
-            description={t("home_val_desc")}
-          />
+        <div className="mt-8 max-w-lg mx-auto">
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+            whileHover={{ y: -8 }}
+            className="group relative cursor-pointer overflow-hidden border border-primary/30 hover:border-primary/60 clip-angle transition-all duration-300"
+            onClick={() => window.location.href = user ? "/matchmaking" : "/auth"}
+          >
+            <div className="relative h-64 overflow-hidden">
+              <img
+                src={lolHero}
+                alt="League of Legends"
+                className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-background via-background/50 to-transparent" />
+            </div>
+            <div className="relative p-6">
+              <h3 className="font-display text-2xl font-bold tracking-wider text-primary">
+                LEAGUE OF LEGENDS
+              </h3>
+              <p className="mt-2 text-sm text-muted-foreground">Encontre seu duo partner. Subam juntos no ranking.</p>
+              <div className="mt-4 flex items-center gap-2">
+                <div className="h-2 w-2 rounded-full bg-primary animate-pulse-glow" />
+                <span className="font-display text-xs tracking-widest text-muted-foreground">
+                  FILA DISPONÍVEL
+                </span>
+              </div>
+            </div>
+          </motion.div>
         </div>
       </section>
 
-      {/* Final CTA */}
       <section className="container py-20 text-center">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -428,15 +430,15 @@ const Index = () => {
         >
           <Swords className="mx-auto h-10 w-10 text-primary/40 mb-4" />
           <h2 className="font-display text-3xl font-bold tracking-wider text-foreground md:text-4xl">
-            {t("home_title_1")}{" "}
-            <span className="text-primary text-glow-primary">{t("home_title_2")}</span>
+            ENCONTRE SEU{" "}
+            <span className="text-primary text-glow-primary">PRÓXIMO TEAMMATE</span>
           </h2>
           <div className="mt-8">
             <Link
               to={user ? "/matchmaking" : "/auth"}
               className="group clip-angle-sm relative inline-block bg-primary px-12 py-4 font-display text-sm font-semibold tracking-wider text-primary-foreground transition-all hover:box-glow-primary hover:scale-105 active:scale-95"
             >
-              {user ? t("home_cta") : t("home_cta_signin")}
+              {user ? "COMEÇAR AGORA" : "ENTRAR"}
             </Link>
           </div>
         </motion.div>

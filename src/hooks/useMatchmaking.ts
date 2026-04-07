@@ -1,7 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { useI18n } from "@/contexts/I18nContext";
 import { useRiotProfile } from "@/hooks/useRiotMatches";
 import { canMatch } from "@/lib/eloUtils";
 import { playMatchFoundSound, playMatchAcceptedSound } from "@/lib/soundUtils";
@@ -16,9 +15,9 @@ interface MatchedPlayerInfo {
   rankSource?: "riot" | "manual";
 }
 
-export const useMatchmaking = (game: "lol" | "valorant") => {
+export const useMatchmaking = () => {
+  const game = "lol";
   const { user, profile } = useAuth();
-  const { t } = useI18n();
   const [status, setStatus] = useState<"idle" | "searching" | "found">("idle");
   const [currentMatch, setCurrentMatch] = useState<Match | null>(null);
   const [matchedPlayer, setMatchedPlayer] = useState<MatchedPlayerInfo | null>(null);
@@ -27,7 +26,7 @@ export const useMatchmaking = (game: "lol" | "valorant") => {
   const [otherAccepted, setOtherAccepted] = useState(false);
   const selectedModeRef = useRef<QueueMode>("normal");
 
-  const { data: riotData } = useRiotProfile(game, profile?.riot_id, "br1", 1);
+  const { data: riotData } = useRiotProfile("lol", profile?.riot_id, "br1", 1);
   const riotRank = riotData?.game === "lol" && riotData.summoner?.ranked
     ? riotData.summoner.ranked.find(r => r.queueType === "RANKED_SOLO_5x5")
       ?? riotData.summoner.ranked.find(r => r.queueType === "RANKED_FLEX_SR")
@@ -43,8 +42,10 @@ export const useMatchmaking = (game: "lol" | "valorant") => {
 
   useEffect(() => {
     const fetchCounts = async () => {
+      // Only count entries from the last 10 minutes to avoid stale data
+      const tenMinAgo = new Date(Date.now() - 10 * 60 * 1000).toISOString();
       const { data } = await supabase
-        .from("matchmaking_queue").select("mode").eq("game", game).eq("status", "waiting");
+        .from("matchmaking_queue").select("mode").eq("game", game).eq("status", "waiting").gte("created_at", tenMinAgo);
       if (data) {
         const counts: Record<string, number> = {};
         data.forEach(entry => { const mode = (entry as any).mode ?? "normal"; counts[mode] = (counts[mode] ?? 0) + 1; });
@@ -130,11 +131,11 @@ export const useMatchmaking = (game: "lol" | "valorant") => {
     selectedModeRef.current = mode;
 
     const isRanked = mode === "solo_duo" || mode === "flex";
-    if (isRanked && !myRank) throw new Error(t("mm_rank_needed"));
+    if (isRanked && !myRank) throw new Error("Você precisa ter um rank para entrar em filas ranqueadas.");
 
     if (mode === "solo_duo" && myRank) {
       const highTiers = ["MASTER", "GRANDMASTER", "CHALLENGER"];
-      if (highTiers.includes(myRank.tier)) throw new Error(t("mm_high_tier_error"));
+      if (highTiers.includes(myRank.tier)) throw new Error("Mestre, Grão-Mestre e Desafiante não podem jogar Solo/Duo.");
     }
 
     const { data: friendships } = await supabase
@@ -180,7 +181,7 @@ export const useMatchmaking = (game: "lol" | "valorant") => {
         break;
       }
     }
-  }, [user, game, myRank, t]);
+  }, [user, game, myRank]);
 
   const cancelQueue = useCallback(async () => {
     if (queueEntryId) await supabase.from("matchmaking_queue").update({ status: "cancelled" }).eq("id", queueEntryId);

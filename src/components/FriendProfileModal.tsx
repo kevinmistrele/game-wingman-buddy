@@ -1,7 +1,6 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Copy } from "lucide-react";
 import { toast } from "sonner";
-import { useI18n } from "@/contexts/I18nContext";
 import RankBadge from "@/components/RankBadge";
 import type { Tables } from "@/integrations/supabase/types";
 
@@ -18,8 +17,6 @@ const DiscordIcon = ({ className }: { className?: string }) => (
 );
 
 const FriendProfileModal = ({ profile, open, onClose }: FriendProfileModalProps) => {
-  const { t } = useI18n();
-
   if (!profile) return null;
 
   const initials = profile.username?.slice(0, 2).toUpperCase() ?? "??";
@@ -27,18 +24,14 @@ const FriendProfileModal = ({ profile, open, onClose }: FriendProfileModalProps)
 
   const copyToClipboard = (text: string, label: string) => {
     navigator.clipboard.writeText(text);
-    toast.success(`${label} ${t("friend_copied")}`);
+    toast.success(`${label} copiado!`);
   };
-
-  const gameLabel = profile.preferred_game === "lol" ? t("friend_game_lol")
-    : profile.preferred_game === "valorant" ? t("friend_game_valorant")
-    : t("friend_game_both");
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="max-w-sm border-border bg-card">
         <DialogHeader>
-          <DialogTitle className="font-display tracking-wider">{t("friend_profile_title")}</DialogTitle>
+          <DialogTitle className="font-display tracking-wider">PERFIL DO JOGADOR</DialogTitle>
         </DialogHeader>
 
         <div className="flex flex-col items-center gap-4 py-4">
@@ -90,7 +83,7 @@ const FriendProfileModal = ({ profile, open, onClose }: FriendProfileModalProps)
 
             {hasRank && (
               <div className="border border-border p-3 rounded text-center">
-                <p className="text-xs font-display tracking-widest text-muted-foreground mb-2">{t("profile_rank")}</p>
+                <p className="text-xs font-display tracking-widest text-muted-foreground mb-2">RANK</p>
                 <RankBadge
                   tier={profile.rank_tier!}
                   rank={profile.rank_division ?? "IV"}
@@ -99,14 +92,14 @@ const FriendProfileModal = ({ profile, open, onClose }: FriendProfileModalProps)
                   size="md"
                 />
                 {profile.rank_source === "manual" && (
-                  <p className="text-xs text-muted-foreground/60 mt-1">{t("profile_manual_rank")}</p>
+                  <p className="text-xs text-muted-foreground/60 mt-1">Rank definido manualmente</p>
                 )}
               </div>
             )}
 
             <div className="border border-border p-3 rounded text-center">
-              <p className="text-xs font-display tracking-widest text-muted-foreground">{t("friend_preferred_game")}</p>
-              <p className="text-sm text-foreground mt-1">{gameLabel}</p>
+              <p className="text-xs font-display tracking-widest text-muted-foreground">JOGO</p>
+              <p className="text-sm text-foreground mt-1">League of Legends</p>
             </div>
           </div>
         </div>
