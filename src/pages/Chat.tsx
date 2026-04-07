@@ -47,9 +47,8 @@ const Chat = () => {
   const activeConvo = conversations.find((c) => c.id === activeConversation);
   const otherUsername = activeConvo?.otherProfile?.username ?? undefined;
   const otherDiscord = activeConvo?.otherProfile?.discord_username ?? undefined;
-  const otherUserId = activeConvo
-    ? (activeConvo.user1_id === activeConvo.otherProfile?.user_id ? activeConvo.otherProfile?.user_id : (activeConvo.otherProfile?.user_id ?? undefined))
-    : undefined;
+  const otherLastSeen = (activeConvo?.otherProfile as any)?.last_seen ?? null;
+  const otherUserId = activeConvo?.otherProfile?.user_id ?? undefined;
 
   const isFriend = otherUserId
     ? friends.some((f) => f.user1_id === otherUserId || f.user2_id === otherUserId)
@@ -108,6 +107,7 @@ const Chat = () => {
             activeConversation={activeConversation}
             otherUsername={otherUsername}
             otherDiscord={otherDiscord}
+            otherLastSeen={otherLastSeen}
             otherUserId={otherUserId}
             isFriend={isFriend}
             hasPendingRequest={hasPendingRequest}

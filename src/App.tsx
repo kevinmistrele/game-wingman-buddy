@@ -6,6 +6,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import OnboardingModal from "@/components/OnboardingModal";
+import { useOnlineStatus } from "@/hooks/useOnlineStatus";
 import Index from "./pages/Index.tsx";
 import Matchmaking from "./pages/Matchmaking.tsx";
 import Chat from "./pages/Chat.tsx";
@@ -25,6 +26,7 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
 
 const OnboardingGuard = () => {
   const { user, needsOnboarding, completeOnboarding } = useAuth();
+  useOnlineStatus();
   if (!needsOnboarding || !user) return null;
 
   const defaultUsername = user.email?.split("@")[0] ?? "";
