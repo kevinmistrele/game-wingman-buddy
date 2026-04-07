@@ -26,7 +26,7 @@ const MAX_BLOCKED = 50;
 
 const SettingsPage = () => {
   const navigate = useNavigate();
-  const { user, profile, signOut } = useAuth();
+  const { user, profile, signOut, refreshProfile } = useAuth();
   const { theme, setTheme } = useTheme();
 
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -59,6 +59,7 @@ const SettingsPage = () => {
       toast.error("Erro ao salvar preferências de rota");
     } else {
       toast.success("Preferências de rota salvas!");
+      await refreshProfile();
     }
     setSavingRoles(false);
   };
