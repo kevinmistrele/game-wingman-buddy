@@ -98,3 +98,38 @@ export const QUEUE_MODES = [
 ] as const;
 
 export type QueueMode = typeof QUEUE_MODES[number]["value"];
+
+export const ROLES = [
+  { value: "top", label: "Top" },
+  { value: "jungle", label: "Jungle" },
+  { value: "mid", label: "Mid" },
+  { value: "adc", label: "ADC" },
+  { value: "support", label: "Suporte" },
+] as const;
+
+export type Role = typeof ROLES[number]["value"];
+
+/**
+ * Check role compatibility between two players.
+ * Returns false if there's a conflict, true if compatible.
+ * Only used in ranked modes during "strict" phase.
+ */
+export const areRolesCompatible = (
+  playerMyRole: string | null,
+  playerDesiredRole: string | null,
+  opponentMyRole: string | null,
+  opponentDesiredRole: string | null,
+): boolean => {
+  // Same role conflict: both play same role and at least one specified a desired duo role
+  const sameRoleConflict =
+    playerMyRole && opponentMyRole
+    && playerMyRole === opponentMyRole
+    && (playerDesiredRole || opponentDesiredRole);
+  if (sameRoleConflict) return false;
+
+  // Bidirectional compatibility
+  const rolesOk =
+    (!playerDesiredRole || opponentMyRole === playerDesiredRole)
+    && (!opponentDesiredRole || playerMyRole === opponentDesiredRole);
+  return rolesOk;
+};
