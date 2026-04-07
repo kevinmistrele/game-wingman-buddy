@@ -311,18 +311,17 @@ export const useMatchmaking = () => {
       if (otherStatus === "accepted") updateData.status = "accepted";
     }
 
-    await supabase.from("matches").update(updateData).eq("id", currentMatch.id);
-
+    // If both accepted, create conversation BEFORE updating match status
+    // This prevents the race condition where the other player's realtime handler
+    // fires before the conversation exists
     if (updateData.status === "accepted") {
       const [id1, id2] = [currentMatch.user1_id, currentMatch.user2_id].sort();
-      // Check for existing conversation first to avoid duplicates
+      let convoId: string | null = null;
       const { data: existingConvo } = await supabase
         .from("conversations").select("id, hidden_by").eq("user1_id", id1).eq("user2_id", id2).limit(1).single();
       
-      let convoId: string | null = null;
       if (existingConvo) {
         convoId = existingConvo.id;
-        // Unhide if hidden by current user
         const hiddenBy: string[] = existingConvo.hidden_by ?? [];
         if (hiddenBy.includes(user.id)) {
           const newHidden = hiddenBy.filter((uid: string) => uid !== user.id);
@@ -333,11 +332,16 @@ export const useMatchmaking = () => {
           .from("conversations").insert({ user1_id: id1, user2_id: id2, match_id: currentMatch.id }).select().single();
         convoId = newConvo?.id ?? null;
       }
-      
+
+      // Now update match status — the other player's realtime handler will find the conversation
+      await supabase.from("matches").update(updateData).eq("id", currentMatch.id);
+
       if (convoId) setAcceptedConvoId(convoId);
       setStatus("idle");
       return convoId;
     }
+
+    await supabase.from("matches").update(updateData).eq("id", currentMatch.id);
 
     if (!accepted) { setStatus("idle"); setCurrentMatch(null); setMatchedPlayer(null); setOtherAccepted(false); }
     return null;
