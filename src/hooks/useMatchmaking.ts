@@ -26,6 +26,7 @@ export const useMatchmaking = () => {
   const [queueEntryId, setQueueEntryId] = useState<string | null>(null);
   const [queueCounts, setQueueCounts] = useState<Record<string, number>>({});
   const [otherAccepted, setOtherAccepted] = useState(false);
+  const [acceptedConvoId, setAcceptedConvoId] = useState<string | null>(null);
   const selectedModeRef = useRef<QueueMode>("normal");
   const queueEntryIdRef = useRef<string | null>(null);
 
@@ -144,6 +145,18 @@ export const useMatchmaking = () => {
               setMatchedPlayer({ profile: otherProfile, rank, rankSource: source ?? undefined });
             }
           } else if (match.status === "accepted") {
+            // Both players accepted — find or create conversation and redirect both
+            const [id1, id2] = [match.user1_id, match.user2_id].sort();
+            const { data: existingConvo } = await supabase
+              .from("conversations").select("id").eq("user1_id", id1).eq("user2_id", id2).limit(1).single();
+            if (existingConvo) {
+              setAcceptedConvoId(existingConvo.id);
+            } else {
+              // Conversation should have been created by respondToMatch, but fallback
+              const { data: newConvo } = await supabase
+                .from("conversations").insert({ user1_id: id1, user2_id: id2, match_id: match.id }).select().single();
+              if (newConvo) setAcceptedConvoId(newConvo.id);
+            }
             setStatus("idle");
           } else if (match.status === "declined" || match.status === "expired") {
             setStatus("idle"); setCurrentMatch(null); setMatchedPlayer(null); setOtherAccepted(false);
@@ -255,5 +268,5 @@ export const useMatchmaking = () => {
     return null;
   }, [currentMatch, user]);
 
-  return { status, currentMatch, matchedPlayer, myRank, myRankSource, queueCounts, otherAccepted, joinQueue, cancelQueue, respondToMatch };
+  return { status, currentMatch, matchedPlayer, myRank, myRankSource, queueCounts, otherAccepted, acceptedConvoId, joinQueue, cancelQueue, respondToMatch };
 };
