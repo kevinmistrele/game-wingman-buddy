@@ -15,6 +15,8 @@ interface MatchedPlayerInfo {
   rankSource?: "riot" | "manual";
 }
 
+const QUEUE_ACTIVE_WINDOW_MS = 2 * 60 * 1000; // 2 minutes
+
 export const useMatchmaking = () => {
   const game = "lol";
   const { user, profile } = useAuth();
@@ -25,6 +27,12 @@ export const useMatchmaking = () => {
   const [queueCounts, setQueueCounts] = useState<Record<string, number>>({});
   const [otherAccepted, setOtherAccepted] = useState(false);
   const selectedModeRef = useRef<QueueMode>("normal");
+  const queueEntryIdRef = useRef<string | null>(null);
+
+  // Keep ref in sync for use in beforeunload
+  useEffect(() => {
+    queueEntryIdRef.current = queueEntryId;
+  }, [queueEntryId]);
 
   const { data: riotData } = useRiotProfile("lol", profile?.riot_id, "br1", 1);
   const riotRank = riotData?.game === "lol" && riotData.summoner?.ranked
@@ -40,12 +48,38 @@ export const useMatchmaking = () => {
   const myRank = riotRank ?? manualRank;
   const myRankSource: "riot" | "manual" | null = riotRank ? "riot" : manualRank ? "manual" : null;
 
+  // Auto-cancel queue on page unload or component unmount
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      const entryId = queueEntryIdRef.current;
+      if (entryId) {
+        // Use sendBeacon for reliability on tab close
+        const url = `${import.meta.env.VITE_SUPABASE_URL}/rest/v1/matchmaking_queue?id=eq.${entryId}`;
+        const body = JSON.stringify({ status: "cancelled" });
+        navigator.sendBeacon(
+          url,
+          new Blob([body], { type: "application/json" })
+        );
+      }
+    };
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => {
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+      // Cleanup on unmount
+      const entryId = queueEntryIdRef.current;
+      if (entryId) {
+        supabase.from("matchmaking_queue").update({ status: "cancelled" }).eq("id", entryId).then();
+      }
+    };
+  }, []);
+
+  // Fetch queue counts with 2-minute active window
   useEffect(() => {
     const fetchCounts = async () => {
-      // Only count entries from the last 10 minutes to avoid stale data
-      const tenMinAgo = new Date(Date.now() - 10 * 60 * 1000).toISOString();
+      const cutoff = new Date(Date.now() - QUEUE_ACTIVE_WINDOW_MS).toISOString();
       const { data } = await supabase
-        .from("matchmaking_queue").select("mode").eq("game", game).eq("status", "waiting").gte("created_at", tenMinAgo);
+        .from("matchmaking_queue").select("mode").eq("game", game).eq("status", "waiting").gte("created_at", cutoff);
       if (data) {
         const counts: Record<string, number> = {};
         data.forEach(entry => { const mode = (entry as any).mode ?? "normal"; counts[mode] = (counts[mode] ?? 0) + 1; });
@@ -153,9 +187,12 @@ export const useMatchmaking = () => {
     setQueueEntryId(data.id);
     setStatus("searching");
 
+    // Only fetch players within the active time window
+    const cutoff = new Date(Date.now() - QUEUE_ACTIVE_WINDOW_MS).toISOString();
     const { data: waitingPlayers } = await supabase
       .from("matchmaking_queue").select("*").eq("game", game).eq("status", "waiting")
-      .neq("user_id", user.id).order("created_at", { ascending: true }).limit(20);
+      .neq("user_id", user.id).gte("created_at", cutoff)
+      .order("created_at", { ascending: true }).limit(20);
 
     if (!waitingPlayers) return;
 
@@ -164,6 +201,11 @@ export const useMatchmaking = () => {
       .filter((p) => !excludedUserIds.has(p.user_id));
 
     for (const opponent of sameModeWaiting) {
+      // Re-verify opponent is still waiting before creating the match
+      const { data: freshEntry } = await supabase
+        .from("matchmaking_queue").select("status").eq("id", opponent.id).single();
+      if (!freshEntry || freshEntry.status !== "waiting") continue;
+
       if (isRanked) {
         try {
           const { data: oppProfile } = await supabase.from("profiles").select("*").eq("user_id", opponent.user_id).single();
