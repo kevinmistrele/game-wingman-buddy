@@ -186,10 +186,13 @@ const FriendsSidebar = ({
                         }`}
                         whileHover={{ x: 2 }} transition={{ duration: 0.15 }}
                       >
-                        <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center font-display text-base font-bold text-primary shrink-0">
-                          {profile?.avatar_url ? (
-                            <img src={profile.avatar_url} alt="" className="h-full w-full rounded-full object-cover" />
-                          ) : initials}
+                        <div className="relative shrink-0">
+                          <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center font-display text-base font-bold text-primary">
+                            {profile?.avatar_url ? (
+                              <img src={profile.avatar_url} alt="" className="h-full w-full rounded-full object-cover" />
+                            ) : initials}
+                          </div>
+                          <OnlineIndicator lastSeen={(profile as any)?.last_seen} />
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center justify-between gap-1">
@@ -237,10 +240,13 @@ const FriendsSidebar = ({
                         className="group flex w-full items-center gap-3 border-b border-border/50 p-4 transition-colors hover:bg-muted/50"
                         whileHover={{ x: 2 }} transition={{ duration: 0.15 }}
                       >
-                        <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center font-display text-base font-bold text-primary shrink-0">
-                          {profile?.avatar_url ? (
-                            <img src={profile.avatar_url} alt="" className="h-full w-full rounded-full object-cover" />
-                          ) : initials}
+                        <div className="relative shrink-0">
+                          <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center font-display text-base font-bold text-primary">
+                            {profile?.avatar_url ? (
+                              <img src={profile.avatar_url} alt="" className="h-full w-full rounded-full object-cover" />
+                            ) : initials}
+                          </div>
+                          <OnlineIndicator lastSeen={(profile as any)?.last_seen} />
                         </div>
                         <div className="flex-1 min-w-0">
                           <p className="font-display text-sm font-semibold tracking-wide text-foreground truncate">{profile?.username ?? "Jogador"}</p>
