@@ -1,39 +1,43 @@
 
 
-# Plano: Atualização em tempo real após aceitar solicitação / auto-aceite mútuo
+# Plano: Status Online + Fix abas cortadas na sidebar
 
-## Problema raiz
+## 1. Status Online dos usuários
 
-O `Chat.tsx` usa dois hooks separados: `useChat` (gerencia `friends`, `conversations`) e `useFriendRequests` (gerencia solicitações). Quando uma solicitação é aceita via `useFriendRequests.acceptRequest`, o hook `useChat` não sabe que uma nova friendship/conversa foi criada — então o botão "Adicionar" continua visível e o amigo não aparece na lista.
+### Database
+- Adicionar coluna `last_seen` (timestamp with time zone, default now()) na tabela `profiles`
+- Usuário é considerado "online" se `last_seen` foi há menos de 2 minutos
 
-## Solução
+### Heartbeat (`src/hooks/useOnlineStatus.ts`)
+- Novo hook que atualiza `profiles.last_seen = now()` a cada 60 segundos via `setInterval`
+- Chamado uma vez no `App.tsx` para usuários autenticados
 
-### 1. Adicionar realtime listener para friendships no `useChat`
+### Indicador visual
+- Bolinha verde (online) ou cinza (offline) no avatar em:
+  - `FriendsSidebar.tsx` — nas abas Conversas, Amigos e Pedidos
+  - `ChatPanel.tsx` — no header do chat ativo
+- Lógica: comparar `profile.last_seen` com `Date.now() - 2min`
 
-**Arquivo:** `src/hooks/useChat.ts`
+### Fetch do last_seen
+- Os perfis já são carregados no `useChat` — basta incluir `last_seen` (já vem no `select("*")`)
+- Adicionar polling a cada 60s no `useChat.fetchFriends` para atualizar o status sem depender de realtime
 
-Adicionar um `useEffect` com listener realtime na tabela `friendships` (INSERT e DELETE), chamando `fetchFriends()` e `fetchConversations()` automaticamente quando houver mudanças. Isso resolve todos os cenários:
-- Aceitar solicitação na aba "Pedidos" → friendship criada → lista de amigos atualiza → botão "Adicionar" some
-- Auto-aceite mútuo → mesma coisa
-- Remover amigo do outro lado → lista atualiza
+## 2. Fix abas cortadas com badge de notificação
 
-### 2. Chamar refresh explícito após aceitar request no Chat.tsx
+### Problema
+As abas usam `flex-1` com conteúdo variável. Quando o badge aparece, o texto + ícone + badge estouram o espaço.
 
-**Arquivo:** `src/pages/Chat.tsx`
-
-No `handleAcceptRequest`, após `acceptRequest`, chamar também `refreshFriends` e `refreshConversations` do `useChat` para atualização imediata (sem depender apenas do realtime que pode ter delay).
-
-Extrair `refreshFriends` e `refreshConversations` do `useChat` (já expõe `refreshConversations` e `refreshFriends` — verificar se `refreshFriends` está exposto, caso contrário expor).
-
-### 3. Refresh após auto-aceite mútuo no useFriendRequests
-
-**Arquivo:** `src/hooks/useFriendRequests.ts`
-
-O `sendRequest` já faz o auto-aceite, mas o `useChat` não sabe. Com o listener realtime do passo 1, isso será resolvido automaticamente. Mas para resposta imediata, o `sendRequest` pode retornar um indicador de que houve auto-aceite, para o `Chat.tsx` forçar refresh.
-
-Alternativa mais simples: o realtime listener já resolve. Garantir que o listener também escuta a tabela `conversations`.
+### Solução (`src/components/FriendsSidebar.tsx`)
+- Esconder o texto das abas e mostrar apenas ícone + badge em telas pequenas (`hidden sm:inline`)
+- Usar `min-w-0` e `overflow-hidden` no container das abas
+- Badge: reduzir padding e usar tamanho fixo mínimo
+- Garantir `whitespace-nowrap` e `truncate` no texto da aba
 
 ## Arquivos modificados
-- `src/hooks/useChat.ts` — listener realtime em `friendships` + expor `refreshFriends`
-- `src/pages/Chat.tsx` — chamar `refreshFriends`/`refreshConversations` após aceitar request
+- **Migration SQL** — adicionar `last_seen` em `profiles`
+- `src/hooks/useOnlineStatus.ts` — novo hook de heartbeat
+- `src/App.tsx` — usar o hook
+- `src/components/FriendsSidebar.tsx` — indicador online + fix tabs
+- `src/components/ChatPanel.tsx` — indicador online no header
+- `src/hooks/useChat.ts` — polling de friends a cada 60s
 
