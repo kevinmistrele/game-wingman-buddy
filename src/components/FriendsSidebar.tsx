@@ -8,6 +8,7 @@ import type { Tables } from "@/integrations/supabase/types";
 import type { ConversationWithProfile, FriendWithProfile } from "@/hooks/useChat";
 import FriendProfileModal from "./FriendProfileModal";
 import ConfirmModal from "./ConfirmModal";
+import OnlineIndicator from "./OnlineIndicator";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
@@ -115,21 +116,21 @@ const FriendsSidebar = ({
   return (
     <>
       <div className="flex h-full w-full md:w-72 flex-col border-r border-border bg-card overflow-hidden">
-        <div className="flex border-b border-border relative">
+        <div className="flex border-b border-border relative min-w-0 overflow-hidden">
           {tabs.map((tab) => (
             <button
               key={tab.key}
               onClick={() => setActiveTab(tab.key)}
-              className={`flex-1 flex items-center justify-center gap-1.5 px-2 py-3 font-display text-[10px] tracking-widest transition-all relative ${
+              className={`flex-1 min-w-0 flex items-center justify-center gap-1 px-1 py-3 font-display text-[10px] tracking-widest transition-all relative whitespace-nowrap ${
                 activeTab === tab.key
                   ? "text-primary"
                   : "text-muted-foreground hover:text-foreground"
               }`}
             >
               {tab.icon}
-              {tab.label}
+              <span className="hidden sm:inline truncate">{tab.label}</span>
               {tab.badge && tab.badge > 0 && (
-                <span className={`ml-0.5 text-[10px] px-1.5 py-0.5 rounded-full ${
+                <span className={`flex-shrink-0 min-w-[18px] text-[10px] px-1 py-0.5 rounded-full text-center leading-none ${
                   tab.key === "requests" ? "bg-destructive/20 text-destructive" : "bg-primary/20 text-primary"
                 }`}>
                   {tab.badge}
