@@ -85,6 +85,16 @@ export const useChat = () => {
     fetchFriends();
   }, [fetchConversations, fetchFriends]);
 
+  // Poll friends every 60s to refresh online status
+  useEffect(() => {
+    if (!user) return;
+    const interval = setInterval(() => {
+      fetchFriends();
+      fetchConversations();
+    }, 60_000);
+    return () => clearInterval(interval);
+  }, [user, fetchFriends, fetchConversations]);
+
   useEffect(() => {
     if (!activeConversation) { setMessages([]); return; }
     const fetchMessages = async () => {
