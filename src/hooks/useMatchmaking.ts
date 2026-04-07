@@ -309,8 +309,28 @@ export const useMatchmaking = () => {
 
     if (updateData.status === "accepted") {
       const [id1, id2] = [currentMatch.user1_id, currentMatch.user2_id].sort();
-      const { data: newConvo } = await supabase.from("conversations").insert({ user1_id: id1, user2_id: id2, match_id: currentMatch.id }).select().single();
-      return newConvo?.id ?? null;
+      // Check for existing conversation first to avoid duplicates
+      const { data: existingConvo } = await supabase
+        .from("conversations").select("id, hidden_by").eq("user1_id", id1).eq("user2_id", id2).limit(1).single();
+      
+      let convoId: string | null = null;
+      if (existingConvo) {
+        convoId = existingConvo.id;
+        // Unhide if hidden by current user
+        const hiddenBy: string[] = existingConvo.hidden_by ?? [];
+        if (hiddenBy.includes(user.id)) {
+          const newHidden = hiddenBy.filter((uid: string) => uid !== user.id);
+          await supabase.from("conversations").update({ hidden_by: newHidden }).eq("id", existingConvo.id);
+        }
+      } else {
+        const { data: newConvo } = await supabase
+          .from("conversations").insert({ user1_id: id1, user2_id: id2, match_id: currentMatch.id }).select().single();
+        convoId = newConvo?.id ?? null;
+      }
+      
+      if (convoId) setAcceptedConvoId(convoId);
+      setStatus("idle");
+      return convoId;
     }
 
     if (!accepted) { setStatus("idle"); setCurrentMatch(null); setMatchedPlayer(null); setOtherAccepted(false); }
