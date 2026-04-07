@@ -69,7 +69,7 @@ const Auth = () => {
           },
         });
         if (error) throw error;
-        toast.success("Conta criada! Verifique seu email para confirmar.", { duration: 6000 });
+        navigate("/verify-email", { state: { email } });
       } else {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) {

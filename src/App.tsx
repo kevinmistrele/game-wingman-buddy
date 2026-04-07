@@ -13,6 +13,7 @@ import Chat from "./pages/Chat.tsx";
 import Profile from "./pages/Profile.tsx";
 import Settings from "./pages/Settings.tsx";
 import Auth from "./pages/Auth.tsx";
+import VerifyEmail from "./pages/VerifyEmail.tsx";
 import NotFound from "./pages/NotFound.tsx";
 
 const queryClient = new QueryClient();
