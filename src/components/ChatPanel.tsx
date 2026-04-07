@@ -82,7 +82,7 @@ const ChatPanel = ({
   return (
     <div className="flex h-full flex-col border-l border-border">
       <div className="flex items-center gap-3 border-b border-border p-4">
-        <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center font-display text-sm font-bold text-primary">
+        <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center font-display text-base font-bold text-primary">
           {otherUsername?.slice(0, 2).toUpperCase() ?? "??"}
         </div>
         <div className="flex-1">
@@ -97,7 +97,7 @@ const ChatPanel = ({
               className="flex items-center gap-1.5 px-3 py-1.5 rounded border border-border text-muted-foreground hover:text-[#5865F2] hover:border-[#5865F2]/50 transition-colors text-xs"
               title={`Discord: ${otherDiscord}`}
             >
-              <DiscordIcon className="h-4 w-4" />
+              <DiscordIcon className="h-5 w-5" />
               <span className="font-display tracking-wide">{otherDiscord}</span>
             </button>
           )}
@@ -107,13 +107,13 @@ const ChatPanel = ({
               className="flex items-center gap-1.5 px-3 py-1.5 rounded border border-primary/30 text-primary hover:bg-primary/10 hover:border-primary/50 transition-colors text-xs"
               title="Adicionar amigo"
             >
-              <UserPlus className="h-4 w-4" />
+              <UserPlus className="h-5 w-5" />
               <span className="font-display tracking-wide">Adicionar</span>
             </button>
           )}
           {otherUserId && hasPendingRequest && (
             <span className="flex items-center gap-1.5 px-3 py-1.5 rounded border border-border text-muted-foreground text-xs">
-              <Clock className="h-4 w-4" />
+              <Clock className="h-5 w-5" />
               <span className="font-display tracking-wide">Enviada</span>
             </span>
           )}
@@ -123,7 +123,7 @@ const ChatPanel = ({
               className="p-1.5 rounded text-muted-foreground hover:text-destructive transition-colors"
               title="Bloquear jogador"
             >
-              <ShieldBan className="h-4 w-4" />
+              <ShieldBan className="h-5 w-5" />
             </button>
           )}
         </div>
