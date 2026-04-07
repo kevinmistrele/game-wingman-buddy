@@ -1,43 +1,74 @@
 
 
-# Plano: Status Online + Fix abas cortadas na sidebar
+# Plano: Rank via API Riot + Abas e Gráficos no Perfil
 
-## 1. Status Online dos usuários
+## Contexto
 
-### Database
-- Adicionar coluna `last_seen` (timestamp with time zone, default now()) na tabela `profiles`
-- Usuário é considerado "online" se `last_seen` foi há menos de 2 minutos
+A edge function `riot-matches` já implementa o fluxo correto (Account-V1 → Summoner-V4 → League-V4) para buscar o rank. O rank já é retornado no campo `summoner.ranked`. O `ProfileCard` já consome esse dado e atualiza o perfil automaticamente. Portanto, **não há mudanças necessárias no backend para obter o rank** — já funciona.
 
-### Heartbeat (`src/hooks/useOnlineStatus.ts`)
-- Novo hook que atualiza `profiles.last_seen = now()` a cada 60 segundos via `setInterval`
-- Chamado uma vez no `App.tsx` para usuários autenticados
+O foco principal é **reestruturar a página de perfil** com abas de navegação e gráficos de desempenho.
 
-### Indicador visual
-- Bolinha verde (online) ou cinza (offline) no avatar em:
-  - `FriendsSidebar.tsx` — nas abas Conversas, Amigos e Pedidos
-  - `ChatPanel.tsx` — no header do chat ativo
-- Lógica: comparar `profile.last_seen` com `Date.now() - 2min`
+---
 
-### Fetch do last_seen
-- Os perfis já são carregados no `useChat` — basta incluir `last_seen` (já vem no `select("*")`)
-- Adicionar polling a cada 60s no `useChat.fetchFriends` para atualizar o status sem depender de realtime
+## 1. Reestruturar a página de Perfil com abas
 
-## 2. Fix abas cortadas com badge de notificação
+**Arquivo:** `src/pages/Profile.tsx`
 
-### Problema
-As abas usam `flex-1` com conteúdo variável. Quando o badge aparece, o texto + ícone + badge estouram o espaço.
+Substituir o layout atual (ProfileCard + RiotProfileSection lado a lado) por um sistema de abas no painel direito:
 
-### Solução (`src/components/FriendsSidebar.tsx`)
-- Esconder o texto das abas e mostrar apenas ícone + badge em telas pequenas (`hidden sm:inline`)
-- Usar `min-w-0` e `overflow-hidden` no container das abas
-- Badge: reduzir padding e usar tamanho fixo mínimo
-- Garantir `whitespace-nowrap` e `truncate` no texto da aba
+- **Aba "Visão Geral"** — Resumo com card de rank (Solo/Duo e Flex), estatísticas gerais (KDA, WR, CS/min), top campeões, e streak
+- **Aba "Partidas"** — Histórico completo de partidas (MatchHistoryCard)
+- **Aba "Estatísticas"** — Gráficos de desempenho
+- **Aba "Campeões"** — Desempenho detalhado por campeão
+
+Usar o componente `Tabs` do shadcn/ui existente.
+
+## 2. Criar componente de gráficos
+
+**Novo arquivo:** `src/components/ProfileCharts.tsx`
+
+Instalar `recharts` como dependência.
+
+Gráficos planejados:
+- **Win Rate ao longo das partidas** — Line chart mostrando % de vitórias acumuladas
+- **KDA por partida** — Bar chart com kills/deaths/assists empilhados
+- **Dano por partida** — Area chart com damage dealt
+- **CS/min por partida** — Line chart
+- **Distribuição de campeões** — Pie chart (top 5 campeões jogados)
+
+Todos os gráficos usam dados já retornados pela API (`recentMatches`), sem chamadas extras.
+
+## 3. Separar componentes do LolProfile
+
+Refatorar `src/components/LolProfile.tsx` para extrair:
+
+- **`OverviewTab`** — Rank, stats médias, performance, streak (seção existente do LolProfile reorganizada)
+- **`MatchesTab`** — Lista de MatchHistoryCard
+- **`StatsTab`** — ProfileCharts (gráficos)
+- **`ChampionsTab`** — Tabela de desempenho por campeão + maestrias
+
+Esses componentes serão definidos inline ou em arquivos separados conforme complexidade.
+
+## 4. Manter o ProfileCard intacto
+
+O `ProfileCard` à esquerda permanece como está — já mostra rank automaticamente via API ou manual.
+
+---
 
 ## Arquivos modificados
-- **Migration SQL** — adicionar `last_seen` em `profiles`
-- `src/hooks/useOnlineStatus.ts` — novo hook de heartbeat
-- `src/App.tsx` — usar o hook
-- `src/components/FriendsSidebar.tsx` — indicador online + fix tabs
-- `src/components/ChatPanel.tsx` — indicador online no header
-- `src/hooks/useChat.ts` — polling de friends a cada 60s
+
+| Arquivo | Ação |
+|---|---|
+| `package.json` | Adicionar `recharts` |
+| `src/pages/Profile.tsx` | Adicionar sistema de abas |
+| `src/components/LolProfile.tsx` | Refatorar em sub-componentes por aba |
+| `src/components/ProfileCharts.tsx` | Novo — gráficos com recharts |
+| `src/components/RiotProfileSection.tsx` | Adaptar para passar dados às abas |
+
+## Detalhes técnicos
+
+- `recharts` já é compatível com React 18 e Tailwind
+- Os gráficos usam cores do tema (CSS variables via `hsl(var(--primary))`)
+- Responsivo: abas empilham em mobile, gráficos usam `ResponsiveContainer`
+- Nenhuma chamada extra à API — todos os dados vêm do `useRiotProfile` existente
 
