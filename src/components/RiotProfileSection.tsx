@@ -4,8 +4,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/contexts/AuthContext";
 import { useI18n } from "@/contexts/I18nContext";
 import { useRiotProfile } from "@/hooks/useRiotMatches";
-import type { LolProfileResponse, ValorantProfileResponse } from "@/hooks/useRiotMatches";
+import type { ValorantProfileResponse } from "@/hooks/useRiotMatches";
 import MatchHistoryCard from "@/components/MatchHistoryCard";
+import LolProfile from "@/components/LolProfile";
 import RankBadge from "@/components/RankBadge";
 import { Trophy, Swords, Star, AlertCircle, Loader2, Shield, Target } from "lucide-react";
 
