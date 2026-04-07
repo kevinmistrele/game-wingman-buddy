@@ -114,7 +114,7 @@ const FriendsSidebar = ({
 
   return (
     <>
-      <div className="flex h-full w-72 flex-col border-r border-border bg-card overflow-hidden">
+      <div className="flex h-full w-full md:w-72 flex-col border-r border-border bg-card overflow-hidden">
         <div className="flex border-b border-border relative">
           {tabs.map((tab) => (
             <button

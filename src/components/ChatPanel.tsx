@@ -82,24 +82,24 @@ const ChatPanel = ({
 
   return (
     <div className="flex h-full flex-col border-l border-border">
-      <div className="flex items-center gap-3 border-b border-border p-4">
-        <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center font-display text-base font-bold text-primary">
+      <div className="flex items-center gap-2 sm:gap-3 border-b border-border p-3 sm:p-4">
+        <div className="h-10 w-10 sm:h-12 sm:w-12 rounded-full bg-muted flex items-center justify-center font-display text-sm sm:text-base font-bold text-primary flex-shrink-0">
           {otherUsername?.slice(0, 2).toUpperCase() ?? "??"}
         </div>
-        <div className="flex-1">
-          <p className="font-display text-sm font-semibold tracking-wide text-foreground">
+        <div className="flex-1 min-w-0">
+          <p className="font-display text-sm font-semibold tracking-wide text-foreground truncate">
             {otherUsername ?? "Player"}
           </p>
         </div>
-        <div className="flex items-center gap-1.5">
+        <div className="flex items-center gap-1 sm:gap-1.5 flex-shrink-0">
           {otherDiscord && (
             <button
               onClick={handleCopyDiscord}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded border border-border text-muted-foreground hover:text-[#5865F2] hover:border-[#5865F2]/50 transition-colors text-xs"
+              className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1.5 rounded border border-border text-muted-foreground hover:text-[#5865F2] hover:border-[#5865F2]/50 transition-colors text-xs"
               title={`Discord: ${otherDiscord}`}
             >
-              <DiscordIcon className="h-5 w-5" />
-              <span className="font-display tracking-wide">{otherDiscord}</span>
+              <DiscordIcon className="h-4 w-4 sm:h-5 sm:w-5" />
+              <span className="font-display tracking-wide hidden sm:inline">{otherDiscord}</span>
             </button>
           )}
           {otherUserId && !isFriend && !hasPendingRequest && onSendFriendRequest && (
@@ -109,17 +109,17 @@ const ChatPanel = ({
                 try { await onSendFriendRequest(otherUserId); } finally { setSendingRequest(false); }
               }}
               disabled={sendingRequest}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded border border-primary/30 text-primary hover:bg-primary/10 hover:border-primary/50 transition-colors text-xs disabled:opacity-50"
+              className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1.5 rounded border border-primary/30 text-primary hover:bg-primary/10 hover:border-primary/50 transition-colors text-xs disabled:opacity-50"
               title="Adicionar amigo"
             >
-              {sendingRequest ? <Loader2 className="h-5 w-5 animate-spin" /> : <UserPlus className="h-5 w-5" />}
-              <span className="font-display tracking-wide">Adicionar</span>
+              {sendingRequest ? <Loader2 className="h-4 w-4 sm:h-5 sm:w-5 animate-spin" /> : <UserPlus className="h-4 w-4 sm:h-5 sm:w-5" />}
+              <span className="font-display tracking-wide hidden sm:inline">Adicionar</span>
             </button>
           )}
           {otherUserId && hasPendingRequest && (
-            <span className="flex items-center gap-1.5 px-3 py-1.5 rounded border border-border text-muted-foreground text-xs">
-              <Clock className="h-5 w-5" />
-              <span className="font-display tracking-wide">Enviada</span>
+            <span className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1.5 rounded border border-border text-muted-foreground text-xs">
+              <Clock className="h-4 w-4 sm:h-5 sm:w-5" />
+              <span className="font-display tracking-wide hidden sm:inline">Enviada</span>
             </span>
           )}
           {otherUserId && onBlockUser && (
@@ -128,7 +128,7 @@ const ChatPanel = ({
               className="p-1.5 rounded text-muted-foreground hover:text-destructive transition-colors"
               title="Bloquear jogador"
             >
-              <ShieldBan className="h-5 w-5" />
+              <ShieldBan className="h-4 w-4 sm:h-5 sm:w-5" />
             </button>
           )}
         </div>
