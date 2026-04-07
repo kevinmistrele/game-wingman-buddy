@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { Send, UserPlus, Clock, ShieldBan } from "lucide-react";
+import { Send, UserPlus, Clock, ShieldBan, Loader2 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import type { Tables } from "@/integrations/supabase/types";
@@ -16,7 +16,7 @@ interface ChatPanelProps {
   otherUserId?: string;
   isFriend?: boolean;
   hasPendingRequest?: boolean;
-  onSendFriendRequest?: (userId: string) => void;
+  onSendFriendRequest?: (userId: string) => Promise<void> | void;
   onBlockUser?: (userId: string) => void;
 }
 
@@ -35,6 +35,7 @@ const ChatPanel = ({
   const bottomRef = useRef<HTMLDivElement>(null);
   const [quickMessagesSent, setQuickMessagesSent] = useState(false);
   const [confirmBlock, setConfirmBlock] = useState(false);
+  const [sendingRequest, setSendingRequest] = useState(false);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -103,11 +104,15 @@ const ChatPanel = ({
           )}
           {otherUserId && !isFriend && !hasPendingRequest && onSendFriendRequest && (
             <button
-              onClick={() => onSendFriendRequest(otherUserId)}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded border border-primary/30 text-primary hover:bg-primary/10 hover:border-primary/50 transition-colors text-xs"
+              onClick={async () => {
+                setSendingRequest(true);
+                try { await onSendFriendRequest(otherUserId); } finally { setSendingRequest(false); }
+              }}
+              disabled={sendingRequest}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded border border-primary/30 text-primary hover:bg-primary/10 hover:border-primary/50 transition-colors text-xs disabled:opacity-50"
               title="Adicionar amigo"
             >
-              <UserPlus className="h-5 w-5" />
+              {sendingRequest ? <Loader2 className="h-5 w-5 animate-spin" /> : <UserPlus className="h-5 w-5" />}
               <span className="font-display tracking-wide">Adicionar</span>
             </button>
           )}

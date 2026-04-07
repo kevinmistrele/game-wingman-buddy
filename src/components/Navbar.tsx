@@ -29,8 +29,8 @@ const Navbar = () => {
     <nav className="fixed top-0 left-0 right-0 z-50 border-b border-border bg-background/80 backdrop-blur-xl">
       <div className="container flex h-16 items-center justify-between">
         <Link to="/" className="flex items-center gap-2">
-          <img src={logo} alt="MatchGaming" className="h-8 w-8" />
-          <span className="font-display text-xl font-bold tracking-wider text-primary">
+          <img src={logo} alt="MatchGaming" className="h-10 w-10" />
+          <span className="font-display text-lg font-bold tracking-wider text-primary">
             MATCHGAMING
           </span>
         </Link>
