@@ -26,17 +26,14 @@ const MatchmakingQueue = () => {
   const [selectedDesiredRole, setSelectedDesiredRole] = useState<Role | null>(null);
   const [joiningQueue, setJoiningQueue] = useState(false);
   const [respondingMatch, setRespondingMatch] = useState<"accept" | "decline" | null>(null);
-  const [prefsLoaded, setPrefsLoaded] = useState(false);
-
-  // Pre-fill from profile preferences (once)
+  // Pre-fill from profile preferences whenever profile updates
   useEffect(() => {
-    if (prefsLoaded || !profile) return;
+    if (!profile) return;
     const pRole = (profile as any)?.preferred_role as string | null;
     const pDuoRole = (profile as any)?.preferred_duo_role as string | null;
-    if (pRole) setSelectedMyRole(pRole as Role);
-    if (pDuoRole) setSelectedDesiredRole(pDuoRole as Role);
-    setPrefsLoaded(true);
-  }, [profile, prefsLoaded]);
+    setSelectedMyRole(pRole as Role ?? null);
+    setSelectedDesiredRole(pDuoRole as Role ?? null);
+  }, [profile]);
 
   useEffect(() => {
     if (status !== "searching") { setTimer(0); return; }
