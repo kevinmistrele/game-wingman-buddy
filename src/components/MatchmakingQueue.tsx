@@ -5,21 +5,16 @@ import { useMatchmaking } from "@/hooks/useMatchmaking";
 import { QUEUE_MODES, ROLES, type QueueMode, type Role } from "@/lib/eloUtils";
 import { TIER_LABELS } from "@/lib/eloUtils";
 import RankBadge from "@/components/RankBadge";
+import RoleIcon, { ROLE_LABELS } from "@/components/RoleIcon";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
-
-const ROLE_LABELS: Record<string, string> = {
-  top: "Top",
-  jungle: "Jungle",
-  mid: "Mid",
-  adc: "ADC",
-  support: "Suporte",
-};
+import { useAuth } from "@/contexts/AuthContext";
 
 const MatchmakingQueue = () => {
   const navigate = useNavigate();
+  const { profile } = useAuth();
   const {
     status, matchedPlayer, myRank, myRankSource, queueCounts, otherAccepted, acceptedConvoId, searchPhase,
     joinQueue, cancelQueue, respondToMatch,
@@ -31,6 +26,17 @@ const MatchmakingQueue = () => {
   const [selectedDesiredRole, setSelectedDesiredRole] = useState<Role | null>(null);
   const [joiningQueue, setJoiningQueue] = useState(false);
   const [respondingMatch, setRespondingMatch] = useState<"accept" | "decline" | null>(null);
+  const [prefsLoaded, setPrefsLoaded] = useState(false);
+
+  // Pre-fill from profile preferences (once)
+  useEffect(() => {
+    if (prefsLoaded || !profile) return;
+    const pRole = (profile as any)?.preferred_role as string | null;
+    const pDuoRole = (profile as any)?.preferred_duo_role as string | null;
+    if (pRole) setSelectedMyRole(pRole as Role);
+    if (pDuoRole) setSelectedDesiredRole(pDuoRole as Role);
+    setPrefsLoaded(true);
+  }, [profile, prefsLoaded]);
 
   useEffect(() => {
     if (status !== "searching") { setTimer(0); return; }
@@ -44,7 +50,6 @@ const MatchmakingQueue = () => {
     if (status === "idle") setRespondingMatch(null);
   }, [status]);
 
-  // Bidirectional redirect: when match is accepted by both, navigate to chat
   useEffect(() => {
     if (acceptedConvoId) {
       toast.success("Match aceito! Abrindo chat...");
@@ -78,6 +83,12 @@ const MatchmakingQueue = () => {
     if (!isRanked) {
       setSelectedMyRole(null);
       setSelectedDesiredRole(null);
+    } else if (profile) {
+      // Re-apply preferences when switching back to ranked
+      const pRole = (profile as any)?.preferred_role as string | null;
+      const pDuoRole = (profile as any)?.preferred_duo_role as string | null;
+      setSelectedMyRole(pRole as Role ?? null);
+      setSelectedDesiredRole(pDuoRole as Role ?? null);
     }
   }, [isRanked]);
 
@@ -167,12 +178,24 @@ const MatchmakingQueue = () => {
                       onValueChange={(v) => setSelectedMyRole(v === "any" ? null : v as Role)}
                     >
                       <SelectTrigger className="bg-background border-border">
-                        <SelectValue placeholder="Qualquer" />
+                        <SelectValue>
+                          {selectedMyRole ? (
+                            <span className="flex items-center gap-2">
+                              <RoleIcon role={selectedMyRole} size="sm" />
+                              {ROLE_LABELS[selectedMyRole]}
+                            </span>
+                          ) : "Qualquer"}
+                        </SelectValue>
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="any">Qualquer</SelectItem>
                         {ROLES.map((role) => (
-                          <SelectItem key={role.value} value={role.value}>{role.label}</SelectItem>
+                          <SelectItem key={role.value} value={role.value}>
+                            <span className="flex items-center gap-2">
+                              <RoleIcon role={role.value} size="sm" />
+                              {role.label}
+                            </span>
+                          </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
@@ -184,12 +207,24 @@ const MatchmakingQueue = () => {
                       onValueChange={(v) => setSelectedDesiredRole(v === "any" ? null : v as Role)}
                     >
                       <SelectTrigger className="bg-background border-border">
-                        <SelectValue placeholder="Qualquer" />
+                        <SelectValue>
+                          {selectedDesiredRole ? (
+                            <span className="flex items-center gap-2">
+                              <RoleIcon role={selectedDesiredRole} size="sm" />
+                              {ROLE_LABELS[selectedDesiredRole]}
+                            </span>
+                          ) : "Qualquer"}
+                        </SelectValue>
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="any">Qualquer</SelectItem>
                         {ROLES.map((role) => (
-                          <SelectItem key={role.value} value={role.value}>{role.label}</SelectItem>
+                          <SelectItem key={role.value} value={role.value}>
+                            <span className="flex items-center gap-2">
+                              <RoleIcon role={role.value} size="sm" />
+                              {role.label}
+                            </span>
+                          </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
@@ -274,12 +309,14 @@ const MatchmakingQueue = () => {
                   {searchPhase === "strict" ? (
                     <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
                       <CheckCircle2 className="h-3.5 w-3.5 text-primary" />
-                      <span>
-                        {selectedMyRole || selectedDesiredRole
-                          ? `Rota desejada${selectedMyRole ? ` (${ROLE_LABELS[selectedMyRole]})` : ""}`
-                          : "Qualquer rota"
-                        }
-                      </span>
+                      {selectedMyRole || selectedDesiredRole ? (
+                        <span className="flex items-center gap-1">
+                          Rota desejada
+                          {selectedMyRole && <RoleIcon role={selectedMyRole} size="sm" showLabel className="text-primary" />}
+                        </span>
+                      ) : (
+                        <span>Qualquer rota</span>
+                      )}
                     </div>
                   ) : (
                     <motion.div
@@ -370,8 +407,8 @@ const MatchmakingQueue = () => {
                       <p className="text-xs text-muted-foreground">Sem rank</p>
                     )}
                     {matchedPlayer.myRole && (
-                      <p className="text-xs text-muted-foreground mt-0.5">
-                        Rota: <span className="text-foreground font-medium">{ROLE_LABELS[matchedPlayer.myRole] ?? matchedPlayer.myRole}</span>
+                      <p className="text-xs text-muted-foreground mt-0.5 flex items-center gap-1">
+                        Rota: <RoleIcon role={matchedPlayer.myRole} size="sm" showLabel className="text-foreground font-medium" />
                       </p>
                     )}
                   </div>

@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { Settings, Palette, Trash2, Download, Loader2, ArrowLeft, Volume2, VolumeX, ShieldBan, ChevronLeft, ChevronRight, UserX } from "lucide-react";
+import { Settings, Palette, Trash2, Download, Loader2, ArrowLeft, Volume2, VolumeX, ShieldBan, ChevronLeft, ChevronRight, UserX, Map } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTheme } from "@/contexts/ThemeContext";
@@ -9,6 +9,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { ROLES, type Role } from "@/lib/eloUtils";
+import RoleIcon, { ROLE_LABELS } from "@/components/RoleIcon";
 import { toast } from "sonner";
 
 interface BlockedUser {
@@ -23,7 +26,7 @@ const MAX_BLOCKED = 50;
 
 const SettingsPage = () => {
   const navigate = useNavigate();
-  const { user, signOut } = useAuth();
+  const { user, profile, signOut } = useAuth();
   const { theme, setTheme } = useTheme();
 
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -31,6 +34,34 @@ const SettingsPage = () => {
   const [deleting, setDeleting] = useState(false);
   const [downloading, setDownloading] = useState(false);
   const [soundOn, setSoundOn] = useState(isSoundEnabled());
+  const [preferredRole, setPreferredRole] = useState<Role | null>(null);
+  const [preferredDuoRole, setPreferredDuoRole] = useState<Role | null>(null);
+  const [savingRoles, setSavingRoles] = useState(false);
+
+  // Load role preferences from profile
+  useEffect(() => {
+    if (!profile) return;
+    setPreferredRole(((profile as any)?.preferred_role as Role) ?? null);
+    setPreferredDuoRole(((profile as any)?.preferred_duo_role as Role) ?? null);
+  }, [profile]);
+
+  const handleSaveRoles = async () => {
+    if (!user) return;
+    setSavingRoles(true);
+    const { error } = await supabase
+      .from("profiles")
+      .update({
+        preferred_role: preferredRole,
+        preferred_duo_role: preferredDuoRole,
+      } as any)
+      .eq("user_id", user.id);
+    if (error) {
+      toast.error("Erro ao salvar preferências de rota");
+    } else {
+      toast.success("Preferências de rota salvas!");
+    }
+    setSavingRoles(false);
+  };
 
   // Blocked users state
   const [blockedUsers, setBlockedUsers] = useState<BlockedUser[]>([]);
@@ -216,6 +247,91 @@ const SettingsPage = () => {
                   }`}
                 >
                   {soundOn ? "ON" : "OFF"}
+                </button>
+              </div>
+            </div>
+          </section>
+
+          {/* Preferências de Rota */}
+          <section className="border border-border rounded-lg overflow-hidden">
+            <div className="border-b border-border px-5 py-3 bg-muted/30">
+              <h2 className="font-display text-sm tracking-widest text-muted-foreground flex items-center gap-2">
+                <Map className="h-4 w-4" />
+                Preferências de Rota
+              </h2>
+            </div>
+            <div className="px-5 py-4 space-y-4">
+              <p className="text-xs text-muted-foreground">
+                Defina suas rotas preferidas para pré-preencher automaticamente no matchmaking ranqueado.
+              </p>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs text-muted-foreground mb-1.5 font-display tracking-wider">SUA ROTA PRINCIPAL</label>
+                  <Select
+                    value={preferredRole ?? "any"}
+                    onValueChange={(v) => setPreferredRole(v === "any" ? null : v as Role)}
+                  >
+                    <SelectTrigger className="bg-background border-border">
+                      <SelectValue>
+                        {preferredRole ? (
+                          <span className="flex items-center gap-2">
+                            <RoleIcon role={preferredRole} size="sm" />
+                            {ROLE_LABELS[preferredRole]}
+                          </span>
+                        ) : "Qualquer"}
+                      </SelectValue>
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="any">Qualquer</SelectItem>
+                      {ROLES.map((role) => (
+                        <SelectItem key={role.value} value={role.value}>
+                          <span className="flex items-center gap-2">
+                            <RoleIcon role={role.value} size="sm" />
+                            {role.label}
+                          </span>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <label className="block text-xs text-muted-foreground mb-1.5 font-display tracking-wider">ROTA DO DUO</label>
+                  <Select
+                    value={preferredDuoRole ?? "any"}
+                    onValueChange={(v) => setPreferredDuoRole(v === "any" ? null : v as Role)}
+                  >
+                    <SelectTrigger className="bg-background border-border">
+                      <SelectValue>
+                        {preferredDuoRole ? (
+                          <span className="flex items-center gap-2">
+                            <RoleIcon role={preferredDuoRole} size="sm" />
+                            {ROLE_LABELS[preferredDuoRole]}
+                          </span>
+                        ) : "Qualquer"}
+                      </SelectValue>
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="any">Qualquer</SelectItem>
+                      {ROLES.map((role) => (
+                        <SelectItem key={role.value} value={role.value}>
+                          <span className="flex items-center gap-2">
+                            <RoleIcon role={role.value} size="sm" />
+                            {role.label}
+                          </span>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div className="flex justify-end">
+                <button
+                  onClick={handleSaveRoles}
+                  disabled={savingRoles}
+                  className="clip-angle-sm bg-primary px-5 py-2 font-display text-xs tracking-wider text-primary-foreground hover:box-glow-primary transition-all disabled:opacity-50 flex items-center gap-2"
+                >
+                  {savingRoles && <Loader2 className="h-3 w-3 animate-spin" />}
+                  Salvar
                 </button>
               </div>
             </div>

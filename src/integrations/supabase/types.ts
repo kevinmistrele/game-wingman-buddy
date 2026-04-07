@@ -224,7 +224,9 @@ export type Database = {
           discord_username: string | null
           id: string
           last_seen: string | null
+          preferred_duo_role: string | null
           preferred_game: Database["public"]["Enums"]["preferred_game"]
+          preferred_role: string | null
           rank: string | null
           rank_division: string | null
           rank_source: string | null
@@ -241,7 +243,9 @@ export type Database = {
           discord_username?: string | null
           id?: string
           last_seen?: string | null
+          preferred_duo_role?: string | null
           preferred_game?: Database["public"]["Enums"]["preferred_game"]
+          preferred_role?: string | null
           rank?: string | null
           rank_division?: string | null
           rank_source?: string | null
@@ -258,7 +262,9 @@ export type Database = {
           discord_username?: string | null
           id?: string
           last_seen?: string | null
+          preferred_duo_role?: string | null
           preferred_game?: Database["public"]["Enums"]["preferred_game"]
+          preferred_role?: string | null
           rank?: string | null
           rank_division?: string | null
           rank_source?: string | null
