@@ -20,7 +20,6 @@ const Chat = () => {
     openConversationWithFriend,
   } = useChat();
 
-  // Auto-select conversation from URL param (e.g. after match)
   useEffect(() => {
     const convoId = searchParams.get("convo");
     if (convoId && conversations.some((c) => c.id === convoId)) {
