@@ -1,77 +1,69 @@
 
 
-# Plano: Preferência de Rotas no Matchmaking (Final)
+# Plano: Tela de Verificação de Email + Email Personalizado
 
-## 1. Database — Migration
+## Parte 0 — Corrigir erros de build (lp prop)
 
-```sql
-ALTER TABLE public.matchmaking_queue
-  ADD COLUMN my_role text DEFAULT NULL
-    CHECK (my_role IN ('top','jungle','mid','adc','support') OR my_role IS NULL),
-  ADD COLUMN desired_duo_role text DEFAULT NULL
-    CHECK (desired_duo_role IN ('top','jungle','mid','adc','support') OR desired_duo_role IS NULL);
-```
+Os erros reportados indicam que `lp` ainda está sendo passado ao `RankBadge`, mas a inspeção dos arquivos mostra que já foram removidos. Isso é cache de build obsoleto. A implementação abaixo vai gerar um novo build que resolve automaticamente. Caso persista, forçar rebuild.
 
-## 2. Constantes (`src/lib/eloUtils.ts`)
+---
 
-Adicionar `ROLES` array e tipo `Role`.
+## Parte 1 — Tela de Verificação de Email
 
-## 3. Lógica de matching (`src/hooks/useMatchmaking.ts`)
+### Novo arquivo: `src/pages/VerifyEmail.tsx`
 
-### `joinQueue(mode, myRole?, desiredDuoRole?)`
-- Modos não ranqueados: forçar `my_role = null`, `desired_duo_role = null`
-- Ranqueados: salvar valores informados
+Página dedicada exibida após cadastro, com visual consistente com `Auth.tsx` (gradient, blur, grid).
 
-### Timer com reset garantido
+**Conteúdo:**
+- Logo MatchGaming + ícone de email animado (motion)
+- Título: "QUASE LÁ, JOGADOR!"
+- Email do usuário exibido: "Enviamos um email para: user@email.com"
+- Mensagem: "Confirme seu email para entrar na arena"
+- Dica: "Verifique também a pasta de spam/lixo eletrônico"
+- Seção de destaques do produto (3 cards):
+  - 🎯 Matchmaking por rank e rota
+  - 💬 Chat em tempo real com seu duo
+  - 🏆 Encontre players do seu nível
+- Botão "Abrir meu email" (abre mailto:)
+- Botão "Reenviar email" com cooldown de 30s e feedback via toast
+- Link "Voltar para login"
+
+**Lógica:**
+- Recebe email via `useLocation().state.email`
+- Fallback caso email não esteja disponível (exibe mensagem genérica)
+- Reenvio via `supabase.auth.resend({ type: 'signup', email })`
+- Cooldown com countdown visual (30, 29, 28...)
+
+### Edição: `src/pages/Auth.tsx`
+
+Após signup com sucesso, redirecionar:
 ```typescript
-useEffect(() => {
-  if (status !== "searching") return;
-  setSearchPhase("strict"); // sempre reseta ao iniciar busca
-  const timer = setTimeout(() => setSearchPhase("expanded"), 30000);
-  return () => clearTimeout(timer);
-}, [status]);
+navigate("/verify-email", { state: { email } });
 ```
+Remover o toast de "verifique seu email" (a página nova cumpre esse papel).
 
-### Lógica de matching (linear e explícita)
+### Edição: `src/App.tsx`
+
+Adicionar rota pública:
 ```typescript
-// 1. Rank é obrigatório
-if (!rankCompatible) return false;
-
-// 2. Fase expandida ignora rotas
-if (searchPhase === "expanded") return true;
-
-// 3. Conflito de mesma rota
-const sameRoleConflict =
-  player.my_role && opponent.my_role
-  && player.my_role === opponent.my_role
-  && (player.desired_duo_role || opponent.desired_duo_role);
-if (sameRoleConflict) return false;
-
-// 4. Compatibilidade de rotas
-const rolesOk =
-  (!player.desired_duo_role || opponent.my_role === player.desired_duo_role)
-  && (!opponent.desired_duo_role || player.my_role === opponent.desired_duo_role);
-return rolesOk;
+<Route path="/verify-email" element={<VerifyEmail />} />
 ```
 
-### Estado exposto ao UI
-- `searchPhase: "strict" | "expanded"`
+---
 
-## 4. UI (`src/components/MatchmakingQueue.tsx`)
+## Parte 2 — Email de Verificação Personalizado
 
-- Dois selects opcionais ("Sua rota", "Rota do duo"), visíveis apenas em Solo/Duo e Flex
-- Default: "Qualquer" (null)
-- Feedback durante busca:
-  - Fase 1: `✔ Mesmo nível (Ouro) · ✔ Rota desejada (Mid)`
-  - Fase 2: `✔ Mesmo nível (Ouro) · ⚠ Qualquer rota`
-- Match encontrado: mostrar rota do oponente (se informada)
+Para personalizar o template do email (botão, visual, texto), é necessário configurar um domínio de email primeiro. Sem domínio, o sistema envia emails com template padrão.
 
-## Arquivos modificados
+Após aprovação do plano, vou apresentar o diálogo de configuração de domínio de email. Depois do domínio configurado, posso criar templates personalizados com a identidade visual do MatchGaming (cores teal/dark, logo, tom gaming).
+
+---
+
+## Arquivos
 
 | Arquivo | Ação |
 |---|---|
-| Migration SQL | `my_role`, `desired_duo_role` com CHECK |
-| `src/lib/eloUtils.ts` | `ROLES`, `Role` type |
-| `src/hooks/useMatchmaking.ts` | Rotas, matching linear, timer com reset |
-| `src/components/MatchmakingQueue.tsx` | Selects, badges, feedback de fase |
+| `src/pages/VerifyEmail.tsx` | Criar |
+| `src/pages/Auth.tsx` | Redirect após signup |
+| `src/App.tsx` | Adicionar rota `/verify-email` |
 
