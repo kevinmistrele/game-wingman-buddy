@@ -1,28 +1,38 @@
 
 
-# Correção da Fila de Matchmaking — Apenas Jogadores Ativos
+# Plano: Loading States, Remoção de Amigo com Cascata e Melhoria da Sidebar
 
-## Problema
-Jogadores que saem da fila (fecham o navegador, perdem conexão, etc.) continuam com status "waiting" no banco, sendo contabilizados na contagem e podendo ser pareados com outros jogadores. O filtro de 10 minutos ajuda mas não resolve completamente.
+## 1. Loading no botão "Encontrar Match" (`MatchmakingQueue.tsx`)
+- Adicionar estado `joiningQueue` no componente
+- Ao clicar em "ENCONTRAR MATCH", mostrar spinner/loading no botão e desabilitá-lo até `joinQueue` resolver
+- O botão mostra um `Loader2` animado enquanto a requisição está pendente
 
-## Solução
+## 2. Loading no modal de match encontrado (`MatchmakingQueue.tsx`)
+- Quando `status === "found"` mas `matchedPlayer` ainda é `null`, mostrar um skeleton/spinner no card do jogador ao invés do fallback "??"
+- Só renderizar as informações do jogador quando `matchedPlayer` estiver carregado
 
-### 1. Limpeza automática ao sair da página (`useMatchmaking.ts`)
-- Adicionar `beforeunload` event listener que cancela a entrada na fila quando o usuário fecha/sai da página
-- Adicionar cleanup no `useEffect` de desmontagem do componente para cancelar a fila automaticamente
-- Isso garante que ao navegar para outra página ou fechar o browser, o status muda para "cancelled"
+## 3. Loading nos botões de ação (aceitar/recusar match)
+- Adicionar estado `respondingMatch` para desabilitar botões e mostrar spinner enquanto a resposta está sendo processada
 
-### 2. Reduzir janela de tempo de 10min para 2min (`useMatchmaking.ts`)
-- Mudar o filtro de contagem de `10 minutos` para `2 minutos` — entradas mais velhas que 2 minutos sem atividade são provavelmente abandonadas
-- Aplicar o mesmo filtro de tempo ao buscar oponentes na `joinQueue`, garantindo que só tente parear com jogadores que entraram recentemente
+## 4. Remoção de amigo com cascata de conversa (`useChat.ts`)
+- Atualizar `removeFriend` para:
+  1. Identificar o `user_id` do amigo sendo removido
+  2. Encontrar e ocultar/deletar conversas associadas a esse amigo
+  3. Remover da lista local de `friends` E de `conversations`
+  4. Limpar `activeConversation` se estava aberta com esse amigo
 
-### 3. Validação antes de criar match (`useMatchmaking.ts`)
-- Antes de criar o match, re-verificar que o oponente ainda está com status "waiting" (evitar race condition)
-- Se o oponente já foi pareado ou cancelou, pular para o próximo
+## 5. Melhoria da Sidebar do Chat (`FriendsSidebar.tsx`)
+- Adicionar `framer-motion` para animações de entrada/saída dos itens da lista (stagger)
+- Animação de transição entre abas (conversas ↔ amigos)
+- Mostrar timestamp relativo na última mensagem (ex: "há 5 min")
+- Mostrar Riot ID como subtítulo nas conversas quando disponível
+- Indicador visual de "online" (status badge no avatar)
+- Animação suave ao remover item da lista (exit animation)
+- Hover effects mais polidos com scale sutil
 
-### 4. Limpeza de entradas antigas no banco
-- Executar uma migration/query para marcar como "expired" todas as entradas "waiting" com mais de 2 minutos de criação (limpeza pontual dos dados atuais)
-
-### Arquivos modificados
-- `src/hooks/useMatchmaking.ts` — cleanup ao sair, filtro de tempo mais agressivo, validação de oponente
+## Arquivos modificados
+- `src/hooks/useMatchmaking.ts` — sem mudanças
+- `src/components/MatchmakingQueue.tsx` — loading states no botão e no card de match
+- `src/hooks/useChat.ts` — cascata na remoção de amigo (remove conversas associadas)
+- `src/components/FriendsSidebar.tsx` — animações, timestamps, visual melhorado
 
