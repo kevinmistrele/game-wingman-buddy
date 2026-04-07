@@ -37,7 +37,6 @@ export const useChat = () => {
 
     if (!convos) { setLoading(false); return; }
 
-    // Filter out conversations hidden by this user
     const visible = convos.filter((c: any) => {
       const hiddenBy: string[] = c.hidden_by ?? [];
       return !hiddenBy.includes(user.id);
@@ -137,11 +136,9 @@ export const useChat = () => {
     });
   }, [user, activeConversation]);
 
-  // Soft-delete: only hide conversation for the current user
   const deleteConversation = useCallback(async (conversationId: string) => {
     if (!user) return;
 
-    // Get current hidden_by array
     const { data: convo } = await supabase
       .from("conversations")
       .select("*")
@@ -158,7 +155,6 @@ export const useChat = () => {
       .update({ hidden_by: newHidden } as any)
       .eq("id", conversationId);
 
-    // Update local state
     setConversations((prev) => prev.filter((c) => c.id !== conversationId));
     if (activeConversation === conversationId) {
       setActiveConversation(null);
@@ -168,15 +164,60 @@ export const useChat = () => {
 
   const removeFriend = useCallback(async (friendshipId: string) => {
     if (!user) return;
+
+    // Find the friend to get their user_id
+    const friend = friends.find((f) => f.id === friendshipId);
+    const friendUserId = friend
+      ? (friend.user1_id === user.id ? friend.user2_id : friend.user1_id)
+      : null;
+
+    // Delete the friendship
     await supabase.from("friendships").delete().eq("id", friendshipId);
     setFriends((prev) => prev.filter((f) => f.id !== friendshipId));
-  }, [user]);
 
-  // Start or open conversation with a friend
+    // Also hide conversations with this friend
+    if (friendUserId) {
+      const associatedConvos = conversations.filter((c) => {
+        const otherUserId = c.user1_id === user.id ? c.user2_id : c.user1_id;
+        return otherUserId === friendUserId;
+      });
+
+      for (const convo of associatedConvos) {
+        const currentHidden: string[] = (convo as any).hidden_by ?? [];
+        if (!currentHidden.includes(user.id)) {
+          const newHidden = [...currentHidden, user.id];
+          await supabase
+            .from("conversations")
+            .update({ hidden_by: newHidden } as any)
+            .eq("id", convo.id);
+        }
+      }
+
+      // Remove from local state
+      setConversations((prev) =>
+        prev.filter((c) => {
+          const otherUserId = c.user1_id === user.id ? c.user2_id : c.user1_id;
+          return otherUserId !== friendUserId;
+        })
+      );
+
+      // Clear active conversation if it was with this friend
+      if (activeConversation) {
+        const activeConvo = conversations.find((c) => c.id === activeConversation);
+        if (activeConvo) {
+          const otherUserId = activeConvo.user1_id === user.id ? activeConvo.user2_id : activeConvo.user1_id;
+          if (otherUserId === friendUserId) {
+            setActiveConversation(null);
+            setMessages([]);
+          }
+        }
+      }
+    }
+  }, [user, friends, conversations, activeConversation]);
+
   const openConversationWithFriend = useCallback(async (friendUserId: string) => {
     if (!user) return;
 
-    // Check if conversation already exists (including hidden ones)
     const [id1, id2] = [user.id, friendUserId].sort();
 
     const { data: existing } = await supabase
@@ -188,7 +229,6 @@ export const useChat = () => {
       .single();
 
     if (existing) {
-      // Unhide if hidden
       const hiddenBy: string[] = (existing as any).hidden_by ?? [];
       if (hiddenBy.includes(user.id)) {
         const newHidden = hiddenBy.filter((id) => id !== user.id);
@@ -200,7 +240,6 @@ export const useChat = () => {
       await fetchConversations();
       setActiveConversation(existing.id);
     } else {
-      // Create new conversation
       const { data: newConvo } = await supabase
         .from("conversations")
         .insert({ user1_id: id1, user2_id: id2 })
