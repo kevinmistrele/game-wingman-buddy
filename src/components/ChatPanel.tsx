@@ -82,12 +82,12 @@ const ChatPanel = ({
 
   return (
     <div className="flex h-full flex-col border-l border-border">
-      <div className="flex items-center gap-3 border-b border-border p-4">
-        <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center font-display text-base font-bold text-primary">
+      <div className="flex items-center gap-2 sm:gap-3 border-b border-border p-3 sm:p-4">
+        <div className="h-10 w-10 sm:h-12 sm:w-12 rounded-full bg-muted flex items-center justify-center font-display text-sm sm:text-base font-bold text-primary flex-shrink-0">
           {otherUsername?.slice(0, 2).toUpperCase() ?? "??"}
         </div>
-        <div className="flex-1">
-          <p className="font-display text-sm font-semibold tracking-wide text-foreground">
+        <div className="flex-1 min-w-0">
+          <p className="font-display text-sm font-semibold tracking-wide text-foreground truncate">
             {otherUsername ?? "Player"}
           </p>
         </div>
