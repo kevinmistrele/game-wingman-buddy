@@ -12,6 +12,7 @@ const Chat = () => {
     conversations, friends, activeConversation, setActiveConversation,
     messages, sendMessage, loading, deleteConversation, removeFriend,
     blockUser, openConversationWithFriend,
+    refreshFriends, refreshConversations,
   } = useChat();
 
   const {
