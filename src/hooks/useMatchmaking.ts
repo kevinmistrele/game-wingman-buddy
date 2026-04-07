@@ -171,8 +171,14 @@ export const useMatchmaking = () => {
           } else if (match.status === "accepted") {
             const [id1, id2] = [match.user1_id, match.user2_id].sort();
             const { data: existingConvo } = await supabase
-              .from("conversations").select("id").eq("user1_id", id1).eq("user2_id", id2).limit(1).single();
+              .from("conversations").select("id, hidden_by").eq("user1_id", id1).eq("user2_id", id2).limit(1).single();
             if (existingConvo) {
+              // Unhide if needed
+              const hiddenBy: string[] = existingConvo.hidden_by ?? [];
+              if (user && hiddenBy.includes(user.id)) {
+                const newHidden = hiddenBy.filter((uid: string) => uid !== user.id);
+                await supabase.from("conversations").update({ hidden_by: newHidden }).eq("id", existingConvo.id);
+              }
               setAcceptedConvoId(existingConvo.id);
             } else {
               const { data: newConvo } = await supabase
