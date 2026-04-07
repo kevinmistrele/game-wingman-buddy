@@ -26,7 +26,7 @@ const MAX_BLOCKED = 50;
 
 const SettingsPage = () => {
   const navigate = useNavigate();
-  const { user, signOut } = useAuth();
+  const { user, profile, signOut } = useAuth();
   const { theme, setTheme } = useTheme();
 
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -34,6 +34,34 @@ const SettingsPage = () => {
   const [deleting, setDeleting] = useState(false);
   const [downloading, setDownloading] = useState(false);
   const [soundOn, setSoundOn] = useState(isSoundEnabled());
+  const [preferredRole, setPreferredRole] = useState<Role | null>(null);
+  const [preferredDuoRole, setPreferredDuoRole] = useState<Role | null>(null);
+  const [savingRoles, setSavingRoles] = useState(false);
+
+  // Load role preferences from profile
+  useEffect(() => {
+    if (!profile) return;
+    setPreferredRole(((profile as any)?.preferred_role as Role) ?? null);
+    setPreferredDuoRole(((profile as any)?.preferred_duo_role as Role) ?? null);
+  }, [profile]);
+
+  const handleSaveRoles = async () => {
+    if (!user) return;
+    setSavingRoles(true);
+    const { error } = await supabase
+      .from("profiles")
+      .update({
+        preferred_role: preferredRole,
+        preferred_duo_role: preferredDuoRole,
+      } as any)
+      .eq("user_id", user.id);
+    if (error) {
+      toast.error("Erro ao salvar preferências de rota");
+    } else {
+      toast.success("Preferências de rota salvas!");
+    }
+    setSavingRoles(false);
+  };
 
   // Blocked users state
   const [blockedUsers, setBlockedUsers] = useState<BlockedUser[]>([]);
