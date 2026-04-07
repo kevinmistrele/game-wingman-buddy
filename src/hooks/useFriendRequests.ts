@@ -158,18 +158,34 @@ export const useFriendRequests = () => {
       return;
     }
 
-    // Check existing pending request from us
+    // Check existing request from us (any status)
     const { data: existing } = await supabase
       .from("friend_requests")
-      .select("id")
+      .select("id, status")
       .eq("sender_id", user.id)
       .eq("receiver_id", receiverId)
-      .eq("status", "pending")
       .limit(1);
 
     if (existing && existing.length > 0) {
-      toast.info("Solicitação já enviada!");
-      return;
+      if (existing[0].status === "pending") {
+        toast.info("Solicitação já enviada!");
+        return;
+      }
+      // Delete old accepted/declined request so we can re-send
+      await supabase.from("friend_requests").delete().eq("id", existing[0].id);
+    }
+
+    // Also clean up old requests from receiver to us (non-pending)
+    const { data: reverseOld } = await supabase
+      .from("friend_requests")
+      .select("id, status")
+      .eq("sender_id", receiverId)
+      .eq("receiver_id", user.id)
+      .neq("status", "pending")
+      .limit(1);
+
+    if (reverseOld && reverseOld.length > 0) {
+      await supabase.from("friend_requests").delete().eq("id", reverseOld[0].id);
     }
 
     // Check receiver's pending count (limit 50)
