@@ -112,7 +112,53 @@ export const useFriendRequests = () => {
       return;
     }
 
-    // Check existing pending request
+    // Check if receiver already sent a pending request to us — auto-accept
+    const { data: reverseRequest } = await supabase
+      .from("friend_requests")
+      .select("id")
+      .eq("sender_id", receiverId)
+      .eq("receiver_id", user.id)
+      .eq("status", "pending")
+      .limit(1);
+
+    if (reverseRequest && reverseRequest.length > 0) {
+      // Auto-accept: both sent requests to each other
+      await supabase
+        .from("friend_requests")
+        .update({ status: "accepted" })
+        .eq("id", reverseRequest[0].id);
+
+      const [id1, id2] = [user.id, receiverId].sort();
+      await supabase.from("friendships").insert({ user1_id: id1, user2_id: id2 });
+
+      // Create or unhide conversation
+      const { data: existingConvo } = await supabase
+        .from("conversations")
+        .select("*")
+        .eq("user1_id", id1)
+        .eq("user2_id", id2)
+        .limit(1)
+        .single();
+
+      if (existingConvo) {
+        const hiddenBy: string[] = existingConvo.hidden_by ?? [];
+        if (hiddenBy.includes(user.id)) {
+          await supabase
+            .from("conversations")
+            .update({ hidden_by: hiddenBy.filter((id) => id !== user.id) })
+            .eq("id", existingConvo.id);
+        }
+      } else {
+        await supabase.from("conversations").insert({ user1_id: id1, user2_id: id2 });
+      }
+
+      setReceivedRequests((prev) => prev.filter((r) => r.id !== reverseRequest[0].id));
+      toast.success("Vocês se adicionaram mutuamente! Amigo adicionado.");
+      fetchRequests();
+      return;
+    }
+
+    // Check existing pending request from us
     const { data: existing } = await supabase
       .from("friend_requests")
       .select("id")

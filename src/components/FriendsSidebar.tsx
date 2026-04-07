@@ -114,7 +114,7 @@ const FriendsSidebar = ({
 
   return (
     <>
-      <div className="flex h-full w-72 flex-col border-r border-border bg-card">
+      <div className="flex h-full w-72 flex-col border-r border-border bg-card overflow-hidden">
         <div className="flex border-b border-border relative">
           {tabs.map((tab) => (
             <button
@@ -242,10 +242,10 @@ const FriendsSidebar = ({
                           ) : initials}
                         </div>
                         <div className="flex-1 min-w-0">
-                          <p className="font-display text-sm font-semibold tracking-wide text-foreground">{profile?.username ?? "Jogador"}</p>
+                          <p className="font-display text-sm font-semibold tracking-wide text-foreground truncate">{profile?.username ?? "Jogador"}</p>
                           {profile?.riot_id && <p className="truncate text-xs text-muted-foreground">{profile.riot_id}</p>}
                         </div>
-                        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
                           <button onClick={() => profile && setViewingProfile(profile)} className="p-1.5 text-muted-foreground hover:text-primary transition-colors" title="Ver perfil">
                             <Eye className="h-5 w-5" />
                           </button>
