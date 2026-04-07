@@ -107,9 +107,9 @@ const FriendsSidebar = ({
   };
 
   const tabs: { key: TabType; label: string; icon: React.ReactNode; badge?: number }[] = [
-    { key: "conversations", label: "CONVERSAS", icon: <MessageSquare className="h-3.5 w-3.5" /> },
-    { key: "friends", label: "AMIGOS", icon: <Users className="h-3.5 w-3.5" />, badge: friends.length || undefined },
-    { key: "requests", label: "PEDIDOS", icon: <Bell className="h-3.5 w-3.5" />, badge: pendingRequestCount || undefined },
+    { key: "conversations", label: "CONVERSAS", icon: <MessageSquare className="h-4 w-4" /> },
+    { key: "friends", label: "AMIGOS", icon: <Users className="h-4 w-4" />, badge: friends.length || undefined },
+    { key: "requests", label: "PEDIDOS", icon: <Bell className="h-4 w-4" />, badge: pendingRequestCount || undefined },
   ];
 
   return (
@@ -185,7 +185,7 @@ const FriendsSidebar = ({
                         }`}
                         whileHover={{ x: 2 }} transition={{ duration: 0.15 }}
                       >
-                        <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center font-display text-sm font-bold text-primary shrink-0">
+                        <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center font-display text-base font-bold text-primary shrink-0">
                           {profile?.avatar_url ? (
                             <img src={profile.avatar_url} alt="" className="h-full w-full rounded-full object-cover" />
                           ) : initials}
@@ -236,7 +236,7 @@ const FriendsSidebar = ({
                         className="group flex w-full items-center gap-3 border-b border-border/50 p-4 transition-colors hover:bg-muted/50"
                         whileHover={{ x: 2 }} transition={{ duration: 0.15 }}
                       >
-                        <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center font-display text-sm font-bold text-primary shrink-0">
+                        <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center font-display text-base font-bold text-primary shrink-0">
                           {profile?.avatar_url ? (
                             <img src={profile.avatar_url} alt="" className="h-full w-full rounded-full object-cover" />
                           ) : initials}
@@ -247,21 +247,21 @@ const FriendsSidebar = ({
                         </div>
                         <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                           <button onClick={() => profile && setViewingProfile(profile)} className="p-1.5 text-muted-foreground hover:text-primary transition-colors" title="Ver perfil">
-                            <Eye className="h-3.5 w-3.5" />
+                            <Eye className="h-5 w-5" />
                           </button>
                           {onOpenConversation && profile && (
                             <button onClick={() => onOpenConversation(profile.user_id)} className="p-1.5 text-muted-foreground hover:text-primary transition-colors" title="Enviar mensagem">
-                              <MessageCircle className="h-3.5 w-3.5" />
+                              <MessageCircle className="h-5 w-5" />
                             </button>
                           )}
                           {onBlockUser && (
                             <button onClick={() => setConfirmBlockUser(friendUserId)} className="p-1.5 text-muted-foreground hover:text-destructive transition-colors" title="Bloquear">
-                              <ShieldBan className="h-3.5 w-3.5" />
+                              <ShieldBan className="h-5 w-5" />
                             </button>
                           )}
                           {onRemoveFriend && (
                             <button onClick={() => setConfirmRemoveFriend(friend.id)} className="p-1.5 text-muted-foreground hover:text-destructive transition-colors" title="Remover amigo">
-                              {removingFriendId === friend.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <UserMinus className="h-3.5 w-3.5" />}
+                              {removingFriendId === friend.id ? <Loader2 className="h-5 w-5 animate-spin" /> : <UserMinus className="h-5 w-5" />}
                             </button>
                           )}
                         </div>
@@ -291,7 +291,7 @@ const FriendsSidebar = ({
                         key={req.id} custom={i} variants={itemVariants} initial="hidden" animate="visible" exit="exit" layout
                         className="flex w-full items-center gap-3 border-b border-border/50 p-4"
                       >
-                        <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center font-display text-sm font-bold text-primary shrink-0">
+                        <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center font-display text-base font-bold text-primary shrink-0">
                           {profile?.avatar_url ? (
                             <img src={profile.avatar_url} alt="" className="h-full w-full rounded-full object-cover" />
                           ) : initials}
@@ -308,7 +308,7 @@ const FriendsSidebar = ({
                               className="p-1.5 rounded bg-primary/10 text-primary hover:bg-primary/20 transition-colors"
                               title="Aceitar"
                             >
-                              <Check className="h-4 w-4" />
+                              <Check className="h-5 w-5" />
                             </button>
                           )}
                           {onDeclineRequest && (
@@ -317,7 +317,7 @@ const FriendsSidebar = ({
                               className="p-1.5 rounded bg-destructive/10 text-destructive hover:bg-destructive/20 transition-colors"
                               title="Recusar"
                             >
-                              <X className="h-4 w-4" />
+                              <X className="h-5 w-5" />
                             </button>
                           )}
                         </div>

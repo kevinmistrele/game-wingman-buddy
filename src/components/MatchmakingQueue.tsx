@@ -11,7 +11,7 @@ import { useNavigate } from "react-router-dom";
 const MatchmakingQueue = () => {
   const navigate = useNavigate();
   const {
-    status, matchedPlayer, myRank, myRankSource, queueCounts, otherAccepted,
+    status, matchedPlayer, myRank, myRankSource, queueCounts, otherAccepted, acceptedConvoId,
     joinQueue, cancelQueue, respondToMatch,
   } = useMatchmaking();
 
@@ -32,6 +32,14 @@ const MatchmakingQueue = () => {
     if (status === "idle") setRespondingMatch(null);
   }, [status]);
 
+  // Bidirectional redirect: when match is accepted by both, navigate to chat
+  useEffect(() => {
+    if (acceptedConvoId) {
+      toast.success("Match aceito! Abrindo chat...");
+      setTimeout(() => navigate(`/chat?convo=${acceptedConvoId}`), 800);
+    }
+  }, [acceptedConvoId, navigate]);
+
   const handleStart = async () => {
     setJoiningQueue(true);
     try { await joinQueue(selectedMode); }
@@ -41,15 +49,8 @@ const MatchmakingQueue = () => {
   const handleRespond = async (accepted: boolean) => {
     setRespondingMatch(accepted ? "accept" : "decline");
     try {
-      const convoId = await respondToMatch(accepted);
-      if (accepted) {
-        toast.success("Match aceito! Abrindo chat...");
-        if (convoId) {
-          setTimeout(() => navigate(`/chat?convo=${convoId}`), 800);
-        } else {
-          setTimeout(() => navigate("/chat"), 1500);
-        }
-      }
+      await respondToMatch(accepted);
+      // Redirect is now handled by acceptedConvoId useEffect above
     } catch {
       setRespondingMatch(null);
     }
