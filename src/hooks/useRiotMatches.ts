@@ -19,20 +19,6 @@ interface LolMatch {
   items: number[];
 }
 
-interface ValorantMatch {
-  matchId: string;
-  map: string;
-  agent: string;
-  win: boolean;
-  kills: number;
-  deaths: number;
-  assists: number;
-  score: number;
-  roundsWon: number;
-  roundsLost: number;
-  date: string;
-}
-
 interface ChampionMastery {
   championId: number;
   championName: string;
@@ -59,17 +45,6 @@ interface Summoner {
   ranked?: RankedEntry[];
 }
 
-interface ValorantAgent {
-  agentId: string;
-  wins: number;
-  losses: number;
-  kills: number;
-  deaths: number;
-  assists: number;
-  games: number;
-  winRate: number;
-}
-
 interface LolProfileResponse {
   game: "lol";
   puuid: string;
@@ -80,52 +55,36 @@ interface LolProfileResponse {
   recentMatches: LolMatch[];
 }
 
-interface ValorantProfileResponse {
-  game: "valorant";
-  puuid: string;
-  gameName: string;
-  tagLine: string;
-  recentMatches: ValorantMatch[];
-  topAgents: ValorantAgent[];
-}
-
-type RiotProfileResponse = LolProfileResponse | ValorantProfileResponse;
-
 const fetchRiotProfile = async (
-  game: "lol" | "valorant",
+  game: "lol",
   riotId: string,
   region = "br1",
   count = 10
-): Promise<RiotProfileResponse> => {
+): Promise<LolProfileResponse> => {
   const { data: { session } } = await supabase.auth.getSession();
-
   const projectUrl = import.meta.env.VITE_SUPABASE_URL;
   const apiKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
-
   const url = `${projectUrl}/functions/v1/riot-matches?action=profile&game=${game}&riotId=${encodeURIComponent(riotId)}&region=${region}&count=${count}`;
-
   const response = await fetch(url, {
     headers: {
       Authorization: `Bearer ${session?.access_token ?? ""}`,
       apikey: apiKey,
     },
   });
-
   if (!response.ok) {
     const err = await response.json();
     throw new Error(err.error || "Falha ao buscar perfil Riot");
   }
-
   return response.json();
 };
 
 export const useRiotProfile = (
-  game: "lol" | "valorant",
+  game: "lol",
   riotId: string | null | undefined,
   region = "br1",
   count = 10
 ) => {
-  return useQuery<RiotProfileResponse>({
+  return useQuery<LolProfileResponse>({
     queryKey: ["riot-profile", game, riotId, region, count],
     queryFn: () => fetchRiotProfile(game, riotId!, region, count),
     enabled: !!riotId,
@@ -135,7 +94,7 @@ export const useRiotProfile = (
 };
 
 export const useRiotMatches = (
-  game: "lol" | "valorant",
+  game: "lol",
   riotId: string | null | undefined,
   region = "br1",
   count = 5
@@ -146,7 +105,6 @@ export const useRiotMatches = (
       const projectUrl = import.meta.env.VITE_SUPABASE_URL;
       const apiKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
       const { data: { session } } = await supabase.auth.getSession();
-
       const url = `${projectUrl}/functions/v1/riot-matches?action=matches&game=${game}&riotId=${encodeURIComponent(riotId!)}&region=${region}&count=${count}`;
       const res = await fetch(url, {
         headers: {
@@ -156,7 +114,7 @@ export const useRiotMatches = (
       });
       if (!res.ok) {
         const err = await res.json();
-        throw new Error(err.error || "Failed to fetch matches");
+        throw new Error(err.error || "Falha ao buscar partidas");
       }
       return res.json();
     },
@@ -166,6 +124,6 @@ export const useRiotMatches = (
 };
 
 export type {
-  LolMatch, ValorantMatch, ChampionMastery, RankedEntry,
-  Summoner, ValorantAgent, LolProfileResponse, ValorantProfileResponse, RiotProfileResponse,
+  LolMatch, ChampionMastery, RankedEntry,
+  Summoner, LolProfileResponse,
 };
