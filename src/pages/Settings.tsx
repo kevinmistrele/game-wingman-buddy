@@ -252,6 +252,91 @@ const SettingsPage = () => {
             </div>
           </section>
 
+          {/* Preferências de Rota */}
+          <section className="border border-border rounded-lg overflow-hidden">
+            <div className="border-b border-border px-5 py-3 bg-muted/30">
+              <h2 className="font-display text-sm tracking-widest text-muted-foreground flex items-center gap-2">
+                <Map className="h-4 w-4" />
+                Preferências de Rota
+              </h2>
+            </div>
+            <div className="px-5 py-4 space-y-4">
+              <p className="text-xs text-muted-foreground">
+                Defina suas rotas preferidas para pré-preencher automaticamente no matchmaking ranqueado.
+              </p>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs text-muted-foreground mb-1.5 font-display tracking-wider">SUA ROTA PRINCIPAL</label>
+                  <Select
+                    value={preferredRole ?? "any"}
+                    onValueChange={(v) => setPreferredRole(v === "any" ? null : v as Role)}
+                  >
+                    <SelectTrigger className="bg-background border-border">
+                      <SelectValue>
+                        {preferredRole ? (
+                          <span className="flex items-center gap-2">
+                            <RoleIcon role={preferredRole} size="sm" />
+                            {ROLE_LABELS[preferredRole]}
+                          </span>
+                        ) : "Qualquer"}
+                      </SelectValue>
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="any">Qualquer</SelectItem>
+                      {ROLES.map((role) => (
+                        <SelectItem key={role.value} value={role.value}>
+                          <span className="flex items-center gap-2">
+                            <RoleIcon role={role.value} size="sm" />
+                            {role.label}
+                          </span>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <label className="block text-xs text-muted-foreground mb-1.5 font-display tracking-wider">ROTA DO DUO</label>
+                  <Select
+                    value={preferredDuoRole ?? "any"}
+                    onValueChange={(v) => setPreferredDuoRole(v === "any" ? null : v as Role)}
+                  >
+                    <SelectTrigger className="bg-background border-border">
+                      <SelectValue>
+                        {preferredDuoRole ? (
+                          <span className="flex items-center gap-2">
+                            <RoleIcon role={preferredDuoRole} size="sm" />
+                            {ROLE_LABELS[preferredDuoRole]}
+                          </span>
+                        ) : "Qualquer"}
+                      </SelectValue>
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="any">Qualquer</SelectItem>
+                      {ROLES.map((role) => (
+                        <SelectItem key={role.value} value={role.value}>
+                          <span className="flex items-center gap-2">
+                            <RoleIcon role={role.value} size="sm" />
+                            {role.label}
+                          </span>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div className="flex justify-end">
+                <button
+                  onClick={handleSaveRoles}
+                  disabled={savingRoles}
+                  className="clip-angle-sm bg-primary px-5 py-2 font-display text-xs tracking-wider text-primary-foreground hover:box-glow-primary transition-all disabled:opacity-50 flex items-center gap-2"
+                >
+                  {savingRoles && <Loader2 className="h-3 w-3 animate-spin" />}
+                  Salvar
+                </button>
+              </div>
+            </div>
+          </section>
+
           {/* Usuários Bloqueados */}
           <section className="border border-border rounded-lg overflow-hidden">
             <div className="border-b border-border px-5 py-3 bg-muted/30">
