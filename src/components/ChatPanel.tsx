@@ -1,8 +1,9 @@
 import { useState, useRef, useEffect } from "react";
-import { Send } from "lucide-react";
+import { Send, UserPlus, Clock, ShieldBan } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import type { Tables } from "@/integrations/supabase/types";
+import ConfirmModal from "./ConfirmModal";
 
 type Message = Tables<"messages">;
 
@@ -12,6 +13,11 @@ interface ChatPanelProps {
   activeConversation: string | null;
   otherUsername?: string;
   otherDiscord?: string;
+  otherUserId?: string;
+  isFriend?: boolean;
+  hasPendingRequest?: boolean;
+  onSendFriendRequest?: (userId: string) => void;
+  onBlockUser?: (userId: string) => void;
 }
 
 const DiscordIcon = ({ className }: { className?: string }) => (
@@ -20,11 +26,15 @@ const DiscordIcon = ({ className }: { className?: string }) => (
   </svg>
 );
 
-const ChatPanel = ({ messages, sendMessage, activeConversation, otherUsername, otherDiscord }: ChatPanelProps) => {
+const ChatPanel = ({
+  messages, sendMessage, activeConversation, otherUsername, otherDiscord,
+  otherUserId, isFriend, hasPendingRequest, onSendFriendRequest, onBlockUser,
+}: ChatPanelProps) => {
   const { user } = useAuth();
   const [input, setInput] = useState("");
   const bottomRef = useRef<HTMLDivElement>(null);
   const [quickMessagesSent, setQuickMessagesSent] = useState(false);
+  const [confirmBlock, setConfirmBlock] = useState(false);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -80,16 +90,43 @@ const ChatPanel = ({ messages, sendMessage, activeConversation, otherUsername, o
             {otherUsername ?? "Player"}
           </p>
         </div>
-        {otherDiscord && (
-          <button
-            onClick={handleCopyDiscord}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded border border-border text-muted-foreground hover:text-[#5865F2] hover:border-[#5865F2]/50 transition-colors text-xs"
-            title={`Discord: ${otherDiscord}`}
-          >
-            <DiscordIcon className="h-4 w-4" />
-            <span className="font-display tracking-wide">{otherDiscord}</span>
-          </button>
-        )}
+        <div className="flex items-center gap-1.5">
+          {otherDiscord && (
+            <button
+              onClick={handleCopyDiscord}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded border border-border text-muted-foreground hover:text-[#5865F2] hover:border-[#5865F2]/50 transition-colors text-xs"
+              title={`Discord: ${otherDiscord}`}
+            >
+              <DiscordIcon className="h-4 w-4" />
+              <span className="font-display tracking-wide">{otherDiscord}</span>
+            </button>
+          )}
+          {otherUserId && !isFriend && !hasPendingRequest && onSendFriendRequest && (
+            <button
+              onClick={() => onSendFriendRequest(otherUserId)}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded border border-primary/30 text-primary hover:bg-primary/10 hover:border-primary/50 transition-colors text-xs"
+              title="Adicionar amigo"
+            >
+              <UserPlus className="h-4 w-4" />
+              <span className="font-display tracking-wide">Adicionar</span>
+            </button>
+          )}
+          {otherUserId && hasPendingRequest && (
+            <span className="flex items-center gap-1.5 px-3 py-1.5 rounded border border-border text-muted-foreground text-xs">
+              <Clock className="h-4 w-4" />
+              <span className="font-display tracking-wide">Enviada</span>
+            </span>
+          )}
+          {otherUserId && onBlockUser && (
+            <button
+              onClick={() => setConfirmBlock(true)}
+              className="p-1.5 rounded text-muted-foreground hover:text-destructive transition-colors"
+              title="Bloquear jogador"
+            >
+              <ShieldBan className="h-4 w-4" />
+            </button>
+          )}
+        </div>
       </div>
 
       <div className="flex-1 overflow-y-auto p-4 space-y-3">
@@ -169,6 +206,17 @@ const ChatPanel = ({ messages, sendMessage, activeConversation, otherUsername, o
           </button>
         </div>
       </div>
+
+      <ConfirmModal
+        open={confirmBlock}
+        onClose={() => setConfirmBlock(false)}
+        onConfirm={() => {
+          if (otherUserId && onBlockUser) onBlockUser(otherUserId);
+          setConfirmBlock(false);
+        }}
+        title="Bloquear Jogador"
+        description="Deseja bloquear este jogador? Ele será removido dos seus amigos e não poderá mais te encontrar no matchmaking."
+      />
     </div>
   );
 };
