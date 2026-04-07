@@ -1,52 +1,58 @@
 
 
-# Plano: Limpar mensagens ao excluir amigo, redirecionamento bidirecional, ícones maiores
+# Plano: Auto-aceite mútuo, loading no chat, lista de bloqueados, fix layout, logo/fonte navbar
 
-## 1. Limpar mensagens ao excluir amigo (para ambos os jogadores)
+## 1. Auto-aceite quando ambos enviaram solicitação
 
-**Arquivo:** `src/hooks/useChat.ts` - função `removeFriend`
+**Arquivo:** `src/hooks/useFriendRequests.ts` - função `sendRequest`
 
-Ao remover um amigo, em vez de apenas ocultar conversas (`hidden_by`), deletar permanentemente:
-1. Todas as mensagens das conversas entre os dois jogadores (`DELETE FROM messages WHERE conversation_id = <id>`)
-2. A conversa em si (`DELETE FROM conversations WHERE id = <id>`)
+Antes de inserir nova solicitação, verificar se existe solicitação pendente do `receiverId` para o `user.id`. Se existir:
+- Aceitar essa solicitação automaticamente (update status "accepted")
+- Criar friendship + conversa
+- Toast: "Vocês se adicionaram mutuamente!"
+- Retornar sem criar nova solicitação
 
-Isso limpa o histórico para ambos (pessoa A e pessoa B), já que os dados são removidos do banco. Se se reencontrarem ou re-adicionarem, começam do zero.
-
-Mesmo tratamento no `blockUser`: deletar mensagens e conversas ao bloquear.
-
-## 2. Redirecionamento bidirecional após match aceito
-
-**Arquivo:** `src/hooks/useMatchmaking.ts`
-- Adicionar estado `acceptedConvoId: string | null`
-- No realtime listener, quando `match.status === "accepted"`, buscar/criar a conversa e setar `acceptedConvoId`
-- Expor `acceptedConvoId` no retorno do hook
-
-**Arquivo:** `src/components/MatchmakingQueue.tsx`
-- Observar `acceptedConvoId` via `useEffect`; quando populado, navegar para `/chat?convo=<id>`
-- Isso garante que ambos os jogadores (quem aceita primeiro e quem aceita depois) são redirecionados
-
-## 3. Notificação em tempo real quando o outro jogador aceita
-
-**Arquivo:** `src/hooks/useMatchmaking.ts`
-- No listener realtime, ao detectar que o oponente aceitou (`otherStatus === "accepted"` mas match ainda `pending`), setar `otherAccepted = true` e tocar som
-- Já parcialmente implementado; garantir que funciona corretamente para UPDATE events
-
-## 4. Ícones maiores
-
-**Arquivo:** `src/components/FriendsSidebar.tsx`
-- Avatares: `h-10 w-10` para `h-12 w-12`, texto de iniciais de `text-sm` para `text-base`
-- Ícones de ação (Eye, MessageCircle, ShieldBan, UserMinus): `h-3.5 w-3.5` para `h-5 w-5`
-- Ícones das abas: `h-3.5 w-3.5` para `h-4 w-4`
-- Botões aceitar/recusar pedidos: `h-4 w-4` para `h-5 w-5`
+## 2. Loading ao enviar solicitação via chat
 
 **Arquivo:** `src/components/ChatPanel.tsx`
-- Avatar no header: `h-10 w-10` para `h-12 w-12`
-- Ícones Discord, UserPlus, Clock, ShieldBan: `h-4 w-4` para `h-5 w-5`
+
+- Adicionar estado `sendingRequest: boolean`
+- No botão "Adicionar", setar `true`, chamar `onSendFriendRequest` com `await`, setar `false`
+- Alterar tipo de `onSendFriendRequest` para retornar `Promise<void>`
+- Mostrar `Loader2` com `animate-spin` enquanto loading, desabilitar botão
+
+## 3. Lista de bloqueados nas Configurações (paginada, max 50)
+
+**Arquivo:** `src/pages/Settings.tsx`
+
+Nova seção "Usuários Bloqueados" entre Privacidade e Conta:
+- Buscar `blocked_users` com `.eq("blocker_id", user.id)` paginado (10 por vez) via `range(offset, offset+9)`
+- Buscar perfil de cada `blocked_id` para exibir username/avatar
+- Lista com avatar, username e botão "Desbloquear"
+- Desbloquear: `DELETE FROM blocked_users WHERE id = <id>` + toast (sem re-adicionar amigo)
+- Paginação: botões "Anterior"/"Próximo" com contagem total
+- Mostrar total / 50
+
+## 4. Fix layout — elementos saindo da tela
+
+**Arquivo:** `src/components/FriendsSidebar.tsx`
+
+- Adicionar `overflow-hidden` no container principal
+- Nos nomes dos amigos, adicionar `truncate` ao `<p>` do username
+- Container de ações: `flex-shrink-0` para não comprimir ícones
+
+## 5. Logo maior e fonte menor na Navbar
+
+**Arquivo:** `src/components/Navbar.tsx`
+
+- Ícone/logo: de `h-8 w-8` para `h-10 w-10`
+- Texto "MATCHGAMING": de `text-xl` para `text-lg`
+- Ficam proporcionais: logo maior, fonte menor
 
 ## Arquivos modificados
-- `src/hooks/useChat.ts` — deletar mensagens/conversas ao remover amigo ou bloquear
-- `src/hooks/useMatchmaking.ts` — novo estado `acceptedConvoId`, redirecionamento bidirecional
-- `src/components/MatchmakingQueue.tsx` — useEffect para navegar quando `acceptedConvoId` populado
-- `src/components/FriendsSidebar.tsx` — ícones e avatares maiores
-- `src/components/ChatPanel.tsx` — ícones e avatar maiores
+- `src/hooks/useFriendRequests.ts` — auto-aceite mútuo
+- `src/components/ChatPanel.tsx` — loading no botão adicionar + tipo async
+- `src/pages/Settings.tsx` — seção de bloqueados paginada com desbloquear
+- `src/components/FriendsSidebar.tsx` — fix overflow/truncate
+- `src/components/Navbar.tsx` — logo maior, fonte menor
 
