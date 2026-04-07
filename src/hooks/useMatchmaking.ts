@@ -174,12 +174,13 @@ export const useMatchmaking = () => {
 
     const { data: friendships } = await supabase
       .from("friendships").select("user1_id, user2_id").or(`user1_id.eq.${user.id},user2_id.eq.${user.id}`);
-    const { data: existingConvos } = await supabase
-      .from("conversations").select("user1_id, user2_id").or(`user1_id.eq.${user.id},user2_id.eq.${user.id}`);
+    const { data: blockedUsers } = await supabase
+      .from("blocked_users").select("blocker_id, blocked_id")
+      .or(`blocker_id.eq.${user.id},blocked_id.eq.${user.id}`);
 
     const excludedUserIds = new Set<string>();
     friendships?.forEach((f) => { excludedUserIds.add(f.user1_id === user.id ? f.user2_id : f.user1_id); });
-    existingConvos?.forEach((c) => { excludedUserIds.add(c.user1_id === user.id ? c.user2_id : c.user1_id); });
+    blockedUsers?.forEach((b) => { excludedUserIds.add(b.blocker_id === user.id ? b.blocked_id : b.blocker_id); });
 
     const { data, error } = await supabase
       .from("matchmaking_queue").insert({ user_id: user.id, game, status: "waiting", mode } as any).select().single();
@@ -247,7 +248,6 @@ export const useMatchmaking = () => {
     if (updateData.status === "accepted") {
       const [id1, id2] = [currentMatch.user1_id, currentMatch.user2_id].sort();
       const { data: newConvo } = await supabase.from("conversations").insert({ user1_id: id1, user2_id: id2, match_id: currentMatch.id }).select().single();
-      await supabase.from("friendships").insert({ user1_id: id1, user2_id: id2 });
       return newConvo?.id ?? null;
     }
 
