@@ -1,79 +1,52 @@
 
 
-# Plano: Correção de bugs + Sistema de Bloqueio e Solicitações de Amizade
+# Plano: Limpar mensagens ao excluir amigo, redirecionamento bidirecional, ícones maiores
 
-## Problemas identificados
+## 1. Limpar mensagens ao excluir amigo (para ambos os jogadores)
 
-### Bug 1: Conversas ocultas reaparecem
-A tabela `conversations` **não tem política RLS para UPDATE**. As chamadas `.update({ hidden_by })` falham silenciosamente. Por isso, ao sair e voltar, as conversas "excluídas" reaparecem.
+**Arquivo:** `src/hooks/useChat.ts` - função `removeFriend`
 
-### Bug 2: Não consegue re-encontrar jogador removido
-Em `joinQueue`, o código exclui do matchmaking todos os usuários que têm conversa existente (mesmo ocultas). Precisa filtrar apenas amigos atuais, não conversas antigas.
+Ao remover um amigo, em vez de apenas ocultar conversas (`hidden_by`), deletar permanentemente:
+1. Todas as mensagens das conversas entre os dois jogadores (`DELETE FROM messages WHERE conversation_id = <id>`)
+2. A conversa em si (`DELETE FROM conversations WHERE id = <id>`)
 
----
+Isso limpa o histórico para ambos (pessoa A e pessoa B), já que os dados são removidos do banco. Se se reencontrarem ou re-adicionarem, começam do zero.
 
-## Mudanças
+Mesmo tratamento no `blockUser`: deletar mensagens e conversas ao bloquear.
 
-### 1. Migration: Novas tabelas e políticas RLS
+## 2. Redirecionamento bidirecional após match aceito
 
-**Adicionar UPDATE policy na tabela `conversations`:**
-- Permitir que participantes atualizem suas conversas (necessário para `hidden_by`)
+**Arquivo:** `src/hooks/useMatchmaking.ts`
+- Adicionar estado `acceptedConvoId: string | null`
+- No realtime listener, quando `match.status === "accepted"`, buscar/criar a conversa e setar `acceptedConvoId`
+- Expor `acceptedConvoId` no retorno do hook
 
-**Nova tabela `friend_requests`:**
-- `id`, `sender_id`, `receiver_id`, `status` (pending/accepted/declined), `created_at`
-- RLS: sender pode inserir e ver, receiver pode ver e atualizar (aceitar/recusar)
-- Realtime habilitado para notificações
+**Arquivo:** `src/components/MatchmakingQueue.tsx`
+- Observar `acceptedConvoId` via `useEffect`; quando populado, navegar para `/chat?convo=<id>`
+- Isso garante que ambos os jogadores (quem aceita primeiro e quem aceita depois) são redirecionados
 
-**Nova tabela `blocked_users`:**
-- `id`, `blocker_id`, `blocked_id`, `created_at`
-- RLS: blocker pode inserir, deletar e ver seus bloqueios
+## 3. Notificação em tempo real quando o outro jogador aceita
 
-### 2. Hook `useFriendRequests.ts` (novo)
-- Busca solicitações pendentes recebidas e enviadas
-- Envia solicitação (com verificação de limite de 50 pendentes no receiver)
-- Aceita solicitação (cria friendship + conversa)
-- Recusa solicitação
-- Realtime: listener na tabela `friend_requests` para notificações instantâneas (toast ao receber)
+**Arquivo:** `src/hooks/useMatchmaking.ts`
+- No listener realtime, ao detectar que o oponente aceitou (`otherStatus === "accepted"` mas match ainda `pending`), setar `otherAccepted = true` e tocar som
+- Já parcialmente implementado; garantir que funciona corretamente para UPDATE events
 
-### 3. Hook `useChat.ts` — correções
-- `removeFriend`: remover `as any` casts desnecessários (hidden_by já está tipado)
-- `deleteConversation`: igual, agora funciona porque teremos a policy de UPDATE
+## 4. Ícones maiores
 
-### 4. Hook `useMatchmaking.ts` — correção re-match
-- Na `joinQueue`, alterar `excludedUserIds` para excluir apenas amigos atuais e jogadores bloqueados, **não** conversas existentes
-- Adicionar verificação de bloqueio (excluir bloqueados/bloqueadores)
+**Arquivo:** `src/components/FriendsSidebar.tsx`
+- Avatares: `h-10 w-10` para `h-12 w-12`, texto de iniciais de `text-sm` para `text-base`
+- Ícones de ação (Eye, MessageCircle, ShieldBan, UserMinus): `h-3.5 w-3.5` para `h-5 w-5`
+- Ícones das abas: `h-3.5 w-3.5` para `h-4 w-4`
+- Botões aceitar/recusar pedidos: `h-4 w-4` para `h-5 w-5`
 
-### 5. Sidebar `FriendsSidebar.tsx` — nova aba "Solicitações"
-- Adicionar terceira aba: **Conversas | Amigos | Solicitações**
-- Na aba Solicitações: lista de pedidos recebidos com botões Aceitar/Recusar
-- Badge de contagem de solicitações pendentes na aba
-- Na aba Amigos: adicionar botão de **Bloquear** (ícone shield/ban) ao lado do botão remover
-
-### 6. `ChatPanel.tsx` — botão "Adicionar Amigo"
-- Ao lado do botão Discord no header do chat, adicionar botão "Adicionar Amigo" (ícone UserPlus)
-- Só aparece se o outro usuário **não é** amigo e **não tem** solicitação pendente
-- Ao clicar, envia friend request
-- Se já tem solicitação pendente, mostrar status "Solicitação enviada"
-
-### 7. `useMatchmaking.ts` — remover auto-friendship no match
-- Em `respondToMatch`, ao aceitar match: **não** criar friendship automaticamente
-- Manter a criação da conversa para que possam conversar
-- A amizade agora só é criada via solicitação manual
-
-### 8. Bloqueio de jogadores
-- `useChat.ts`: nova função `blockUser(userId)` que insere na tabela `blocked_users` e remove friendship + oculta conversas
-- Na sidebar (amigos): botão bloquear com confirmação
-- No chat header: opção de bloquear via dropdown/botão
-- Usuários bloqueados não aparecem no matchmaking e não podem enviar solicitações
-
----
+**Arquivo:** `src/components/ChatPanel.tsx`
+- Avatar no header: `h-10 w-10` para `h-12 w-12`
+- Ícones Discord, UserPlus, Clock, ShieldBan: `h-4 w-4` para `h-5 w-5`
 
 ## Arquivos modificados
-- **Migration SQL** — UPDATE policy em conversations, tabelas `friend_requests` e `blocked_users`
-- `src/hooks/useFriendRequests.ts` — novo hook
-- `src/hooks/useChat.ts` — correção do update + bloqueio
-- `src/hooks/useMatchmaking.ts` — filtro de re-match + bloqueio
-- `src/components/FriendsSidebar.tsx` — aba solicitações + botão bloquear
-- `src/components/ChatPanel.tsx` — botão adicionar amigo
-- `src/pages/Chat.tsx` — integrar novo hook
+- `src/hooks/useChat.ts` — deletar mensagens/conversas ao remover amigo ou bloquear
+- `src/hooks/useMatchmaking.ts` — novo estado `acceptedConvoId`, redirecionamento bidirecional
+- `src/components/MatchmakingQueue.tsx` — useEffect para navegar quando `acceptedConvoId` populado
+- `src/components/FriendsSidebar.tsx` — ícones e avatares maiores
+- `src/components/ChatPanel.tsx` — ícones e avatar maiores
 
