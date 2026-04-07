@@ -217,6 +217,7 @@ export type Database = {
           discord_id: string | null
           discord_username: string | null
           id: string
+          last_seen: string | null
           preferred_game: Database["public"]["Enums"]["preferred_game"]
           rank: string | null
           rank_division: string | null
@@ -233,6 +234,7 @@ export type Database = {
           discord_id?: string | null
           discord_username?: string | null
           id?: string
+          last_seen?: string | null
           preferred_game?: Database["public"]["Enums"]["preferred_game"]
           rank?: string | null
           rank_division?: string | null
@@ -249,6 +251,7 @@ export type Database = {
           discord_id?: string | null
           discord_username?: string | null
           id?: string
+          last_seen?: string | null
           preferred_game?: Database["public"]["Enums"]["preferred_game"]
           rank?: string | null
           rank_division?: string | null
