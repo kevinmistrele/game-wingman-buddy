@@ -349,9 +349,28 @@ export const useMatchmaking = () => {
         await supabase.from("conversations").update({ hidden_by: newHidden }).eq("id", existingConvo.id);
       }
     } else {
-      const { data: newConvo } = await supabase
+      const { data: newConvo, error: insertError } = await supabase
         .from("conversations").insert({ user1_id: id1, user2_id: id2, match_id: freshMatch.id }).select().single();
-      convoId = newConvo?.id ?? null;
+      if (newConvo) {
+        convoId = newConvo.id;
+      } else {
+        // Insert may have failed due to unique constraint race — re-select
+        console.warn("[matchmaking] convo insert failed, retrying lookup", insertError);
+        for (let attempt = 0; attempt < 4; attempt++) {
+          await new Promise(r => setTimeout(r, 300));
+          const { data: retry } = await supabase
+            .from("conversations").select("id, hidden_by").eq("user1_id", id1).eq("user2_id", id2).limit(1).single();
+          if (retry) {
+            convoId = retry.id;
+            const hiddenBy: string[] = retry.hidden_by ?? [];
+            if (hiddenBy.includes(user.id)) {
+              const newHidden = hiddenBy.filter((uid: string) => uid !== user.id);
+              await supabase.from("conversations").update({ hidden_by: newHidden }).eq("id", retry.id);
+            }
+            break;
+          }
+        }
+      }
     }
 
     if (freshMatch.status !== "accepted") {

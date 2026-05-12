@@ -63,8 +63,14 @@ const MatchmakingQueue = () => {
   const handleRespond = async (accepted: boolean) => {
     setRespondingMatch(accepted ? "accept" : "decline");
     try {
-      await respondToMatch(accepted);
-    } catch {
+      const convoId = await respondToMatch(accepted);
+      if (accepted && convoId) {
+        // Direct navigation fallback in case the acceptedConvoId effect is delayed
+        toast.success("Match aceito! Abrindo chat...");
+        setTimeout(() => navigate(`/chat?convo=${convoId}`), 400);
+      }
+    } catch (e) {
+      console.error("[matchmaking] respondToMatch failed", e);
       setRespondingMatch(null);
     }
   };
