@@ -139,10 +139,11 @@ export const useMatchmaking = () => {
   useEffect(() => {
     if (!user) return;
     const channel = supabase
-      .channel("matches-realtime")
+      .channel(`matches-realtime-${user.id}`)
       .on("postgres_changes", { event: "*", schema: "public", table: "matches" },
         async (payload) => {
-          const match = payload.new as Match;
+          const match = (payload.new ?? payload.old) as Match;
+          console.log("[realtime:matches]", payload.eventType, match?.id, match?.status);
           if (!match || (match.user1_id !== user.id && match.user2_id !== user.id)) return;
           setCurrentMatch(match);
 
