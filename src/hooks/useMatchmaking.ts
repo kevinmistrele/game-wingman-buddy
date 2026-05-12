@@ -139,10 +139,11 @@ export const useMatchmaking = () => {
   useEffect(() => {
     if (!user) return;
     const channel = supabase
-      .channel("matches-realtime")
+      .channel(`matches-realtime-${user.id}`)
       .on("postgres_changes", { event: "*", schema: "public", table: "matches" },
         async (payload) => {
-          const match = payload.new as Match;
+          const match = (payload.new ?? payload.old) as Match;
+          console.log("[realtime:matches]", payload.eventType, match?.id, match?.status);
           if (!match || (match.user1_id !== user.id && match.user2_id !== user.id)) return;
           setCurrentMatch(match);
 
@@ -198,9 +199,49 @@ export const useMatchmaking = () => {
             setStatus("idle"); setCurrentMatch(null); setMatchedPlayer(null); setOtherAccepted(false);
           }
         }
-      ).subscribe();
+      ).subscribe((status) => {
+        console.log("[realtime:matches] subscription status:", status);
+      });
     return () => { supabase.removeChannel(channel); };
   }, [user]);
+
+  // Polling fallback: when a match is "found", poll DB every 2s to detect bothAccepted
+  // in case the realtime UPDATE event is missed by this client.
+  useEffect(() => {
+    if (status !== "found" || !currentMatch || !user) return;
+    const matchId = currentMatch.id;
+    const interval = setInterval(async () => {
+      const { data: fresh } = await supabase
+        .from("matches").select("*").eq("id", matchId).single();
+      if (!fresh) return;
+      const isUser1 = fresh.user1_id === user.id;
+      const otherStatus = isUser1 ? fresh.user2_status : fresh.user1_status;
+      const myStatus = isUser1 ? fresh.user1_status : fresh.user2_status;
+      setOtherAccepted(otherStatus === "accepted");
+      // If both accepted but we haven't navigated yet, trigger conversation lookup
+      if (fresh.status === "accepted" && myStatus === "accepted" && otherStatus === "accepted" && !acceptedConvoId) {
+        const [id1, id2] = [fresh.user1_id, fresh.user2_id].sort();
+        const { data: convo } = await supabase
+          .from("conversations").select("id, hidden_by").eq("user1_id", id1).eq("user2_id", id2).limit(1).single();
+        if (convo) {
+          const hiddenBy: string[] = convo.hidden_by ?? [];
+          if (hiddenBy.includes(user.id)) {
+            await supabase.from("conversations").update({
+              hidden_by: hiddenBy.filter((u: string) => u !== user.id),
+            }).eq("id", convo.id);
+          }
+          console.log("[matchmaking:poll] both accepted, navigating to convo", convo.id);
+          setAcceptedConvoId(convo.id);
+          setStatus("idle");
+        }
+      }
+      // If match was declined/expired by other player, reset
+      if (fresh.status === "declined" || fresh.status === "expired") {
+        setStatus("idle"); setCurrentMatch(null); setMatchedPlayer(null); setOtherAccepted(false);
+      }
+    }, 2000);
+    return () => clearInterval(interval);
+  }, [status, currentMatch, user, acceptedConvoId]);
 
   useEffect(() => {
     if (!currentMatch || !user || status !== "found") return;
