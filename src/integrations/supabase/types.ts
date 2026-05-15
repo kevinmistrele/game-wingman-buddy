@@ -218,6 +218,7 @@ export type Database = {
       }
       profiles: {
         Row: {
+          active_session_id: string | null
           avatar_url: string | null
           created_at: string
           discord_id: string | null
@@ -232,11 +233,13 @@ export type Database = {
           rank_source: string | null
           rank_tier: string | null
           riot_id: string | null
+          session_started_at: string | null
           updated_at: string
           user_id: string
           username: string
         }
         Insert: {
+          active_session_id?: string | null
           avatar_url?: string | null
           created_at?: string
           discord_id?: string | null
@@ -251,11 +254,13 @@ export type Database = {
           rank_source?: string | null
           rank_tier?: string | null
           riot_id?: string | null
+          session_started_at?: string | null
           updated_at?: string
           user_id: string
           username: string
         }
         Update: {
+          active_session_id?: string | null
           avatar_url?: string | null
           created_at?: string
           discord_id?: string | null
@@ -270,6 +275,7 @@ export type Database = {
           rank_source?: string | null
           rank_tier?: string | null
           riot_id?: string | null
+          session_started_at?: string | null
           updated_at?: string
           user_id?: string
           username?: string

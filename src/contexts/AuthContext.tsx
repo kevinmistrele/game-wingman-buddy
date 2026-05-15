@@ -1,7 +1,9 @@
-import { createContext, useContext, useEffect, useState, ReactNode } from "react";
+import { createContext, useContext, useEffect, useState, ReactNode, useRef } from "react";
 import { User, Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import type { Tables } from "@/integrations/supabase/types";
+import ConfirmModal from "@/components/ConfirmModal";
+import { toast } from "sonner";
 
 type Profile = Tables<"profiles">;
 
@@ -29,12 +31,19 @@ const AuthContext = createContext<AuthContextType>({
 
 export const useAuth = () => useContext(AuthContext);
 
+const SESSION_KEY = "mg_session_id";
+const getLocalSessionId = () => localStorage.getItem(SESSION_KEY);
+const setLocalSessionId = (id: string) => localStorage.setItem(SESSION_KEY, id);
+const clearLocalSessionId = () => localStorage.removeItem(SESSION_KEY);
+
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
   const [needsOnboarding, setNeedsOnboarding] = useState(false);
+  const [pendingTakeover, setPendingTakeover] = useState<{ userId: string } | null>(null);
+  const claimedFor = useRef<string | null>(null);
 
   const fetchProfile = async (userId: string) => {
     const { data } = await supabase
@@ -47,15 +56,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const checkOnboarding = (u: User, p: Profile | null) => {
-    // Google users get auto-generated usernames (from email prefix)
-    // Check if profile needs setup: username is email prefix or riot_id is missing
     const isOAuth = u.app_metadata?.provider === "google";
     const emailPrefix = u.email?.split("@")[0] ?? "";
     const usernameIsDefault = p?.username === emailPrefix;
-    
-    if (isOAuth && p && usernameIsDefault) {
-      setNeedsOnboarding(true);
-    }
+    if (isOAuth && p && usernameIsDefault) setNeedsOnboarding(true);
   };
 
   const refreshProfile = async () => {
@@ -70,19 +74,77 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     if (user) await fetchProfile(user.id);
   };
 
+  // Claim or detect conflicting session
+  const claimSession = async (userId: string) => {
+    if (claimedFor.current === userId) return;
+    const localId = getLocalSessionId();
+    const { data: p } = await supabase
+      .from("profiles")
+      .select("active_session_id")
+      .eq("user_id", userId)
+      .single();
+
+    if (!p) return;
+
+    const remoteId = (p as any).active_session_id as string | null;
+
+    // Already our session → fine
+    if (remoteId && localId && remoteId === localId) {
+      claimedFor.current = userId;
+      return;
+    }
+
+    // No active session → claim immediately
+    if (!remoteId) {
+      const newId = crypto.randomUUID();
+      setLocalSessionId(newId);
+      await supabase
+        .from("profiles")
+        .update({ active_session_id: newId, session_started_at: new Date().toISOString() } as any)
+        .eq("user_id", userId);
+      claimedFor.current = userId;
+      return;
+    }
+
+    // Conflicting session → ask user
+    setPendingTakeover({ userId });
+  };
+
+  const confirmTakeover = async () => {
+    if (!pendingTakeover) return;
+    const newId = crypto.randomUUID();
+    setLocalSessionId(newId);
+    await supabase
+      .from("profiles")
+      .update({ active_session_id: newId, session_started_at: new Date().toISOString() } as any)
+      .eq("user_id", pendingTakeover.userId);
+    claimedFor.current = pendingTakeover.userId;
+    setPendingTakeover(null);
+    toast.success("Conectado. A outra sessão foi desconectada.");
+  };
+
+  const cancelTakeover = async () => {
+    setPendingTakeover(null);
+    clearLocalSessionId();
+    await supabase.auth.signOut();
+  };
+
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (_event, session) => {
+      async (event, session) => {
         setSession(session);
         setUser(session?.user ?? null);
         if (session?.user) {
           setTimeout(async () => {
             const p = await fetchProfile(session.user.id);
             checkOnboarding(session.user, p);
+            await claimSession(session.user.id);
           }, 0);
         } else {
           setProfile(null);
           setNeedsOnboarding(false);
+          claimedFor.current = null;
+          if (event === "SIGNED_OUT") clearLocalSessionId();
         }
         setLoading(false);
       }
@@ -94,6 +156,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       if (session?.user) {
         const p = await fetchProfile(session.user.id);
         checkOnboarding(session.user, p);
+        await claimSession(session.user.id);
       }
       setLoading(false);
     });
@@ -101,7 +164,35 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     return () => subscription.unsubscribe();
   }, []);
 
+  // Realtime: detect when another device takes over our account
+  useEffect(() => {
+    if (!user) return;
+    const channel = supabase
+      .channel(`session-watch-${user.id}`)
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "profiles", filter: `user_id=eq.${user.id}` },
+        (payload: any) => {
+          const newId = payload.new?.active_session_id;
+          const localId = getLocalSessionId();
+          if (newId && localId && newId !== localId && claimedFor.current === user.id) {
+            toast.error("Sua conta foi acessada em outro dispositivo. Você foi desconectado.");
+            clearLocalSessionId();
+            claimedFor.current = null;
+            supabase.auth.signOut();
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user?.id]);
+
   const signOut = async () => {
+    clearLocalSessionId();
+    claimedFor.current = null;
     await supabase.auth.signOut();
     setProfile(null);
     setNeedsOnboarding(false);
@@ -110,6 +201,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   return (
     <AuthContext.Provider value={{ user, session, profile, loading, needsOnboarding, signOut, refreshProfile, completeOnboarding }}>
       {children}
+      <ConfirmModal
+        open={!!pendingTakeover}
+        onClose={cancelTakeover}
+        onConfirm={confirmTakeover}
+        title="Conta ativa em outro dispositivo"
+        description="Já existe uma sessão ativa nesta conta em outro dispositivo. Se continuar, a outra sessão será desconectada imediatamente. Deseja continuar?"
+        confirmLabel="Continuar e desconectar a outra"
+        cancelLabel="Cancelar"
+        destructive
+      />
     </AuthContext.Provider>
   );
 };
