@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Link } from "react-router-dom";
+import { Link, Navigate } from "react-router-dom";
 import Navbar from "@/components/Navbar";
 import { useAuth } from "@/contexts/AuthContext";
 import lolHero from "@/assets/lol-hero.jpg";
@@ -29,9 +29,11 @@ const FloatingParticle = ({ delay, x, size }: { delay: number; x: number; size: 
 );
 
 const Index = () => {
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
   const [activityIndex, setActivityIndex] = useState(0);
   const [matchStep, setMatchStep] = useState(0);
+
+  if (!loading && !user) return <Navigate to="/auth" replace />;
 
   const activities = [
     "🎮 Match iniciado agora — Gold II vs Gold III",
