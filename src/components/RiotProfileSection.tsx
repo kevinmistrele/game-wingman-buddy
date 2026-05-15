@@ -32,11 +32,21 @@ const RiotProfileSection = () => {
   }
 
   if (error) {
+    const status = (error as any)?.status;
+    const isNotFound = status === 404;
     return (
       <div className="clip-angle border border-destructive/30 bg-destructive/5 p-6 text-center">
         <AlertCircle className="mx-auto h-6 w-6 text-destructive mb-2" />
-        <p className="text-sm text-destructive">{(error as Error).message}</p>
-        <p className="text-xs text-muted-foreground mt-1">Verifique se sua API Key da Riot está válida</p>
+        <p className="text-sm text-destructive">
+          {isNotFound
+            ? `Riot ID "${profile.riot_id}" não encontrado na região br1.`
+            : (error as Error).message}
+        </p>
+        <p className="text-xs text-muted-foreground mt-1">
+          {isNotFound
+            ? "Verifique se o Name#TAG está correto nas configurações do perfil."
+            : "Tente novamente em alguns instantes."}
+        </p>
       </div>
     );
   }
