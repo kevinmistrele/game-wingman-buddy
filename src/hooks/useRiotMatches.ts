@@ -72,8 +72,11 @@ const fetchRiotProfile = async (
     },
   });
   if (!response.ok) {
-    const err = await response.json();
-    throw new Error(err.error || "Falha ao buscar perfil Riot");
+    const err = await response.json().catch(() => ({}));
+    const msg = typeof err.error === "string" ? err.error : "Falha ao buscar perfil Riot";
+    const error = new Error(msg) as Error & { status?: number };
+    error.status = response.status;
+    throw error;
   }
   return response.json();
 };
@@ -89,7 +92,10 @@ export const useRiotProfile = (
     queryFn: () => fetchRiotProfile(game, riotId!, region, count),
     enabled: !!riotId,
     staleTime: 5 * 60 * 1000,
-    retry: 1,
+    retry: (failureCount, error: any) => {
+      if (error?.status === 404 || error?.status === 400) return false;
+      return failureCount < 1;
+    },
   });
 };
 
