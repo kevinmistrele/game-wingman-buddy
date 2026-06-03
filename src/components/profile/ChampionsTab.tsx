@@ -59,7 +59,7 @@ const ChampionsTab = ({ matches, masteries }: { matches: LolMatch[]; masteries: 
                     <p className="font-display text-xs font-bold text-foreground">{avgCs}</p>
                   </div>
                   <div className="text-right">
-                    <p className={`font-display text-sm font-bold ${wr >= 60 ? "text-primary" : wr >= 50 ? "text-yellow-400" : "text-destructive"}`}>{wr}% WR</p>
+                    <p className={`font-display text-sm font-bold ${wr >= 60 ? "text-primary" : wr >= 50 ? "text-warning" : "text-destructive"}`}>{wr}% WR</p>
                     <p className="text-xs text-muted-foreground">{kda} KDA</p>
                   </div>
                   <div className="w-16 hidden sm:block">

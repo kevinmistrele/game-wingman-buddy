@@ -1,17 +1,18 @@
 import { TIER_LABELS } from "@/lib/eloUtils";
+import type { TierColorKey } from "@/design-system/tokens";
 
 const TIER_COLORS: Record<string, string> = {
-  IRON: "text-muted-foreground",
-  BRONZE: "text-[hsl(25,60%,50%)]",
-  SILVER: "text-muted-foreground",
-  GOLD: "text-secondary",
-  PLATINUM: "text-[hsl(175,60%,50%)]",
-  EMERALD: "text-[hsl(140,60%,50%)]",
-  DIAMOND: "text-[hsl(210,80%,65%)]",
-  MASTER: "text-accent",
-  GRANDMASTER: "text-destructive",
-  CHALLENGER: "text-secondary",
-};
+  IRON:        "text-tier-iron",
+  BRONZE:      "text-tier-bronze",
+  SILVER:      "text-tier-silver",
+  GOLD:        "text-tier-gold",
+  PLATINUM:    "text-tier-platinum",
+  EMERALD:     "text-tier-emerald",
+  DIAMOND:     "text-tier-diamond",
+  MASTER:      "text-tier-master",
+  GRANDMASTER: "text-tier-grandmaster",
+  CHALLENGER:  "text-tier-challenger",
+} satisfies Record<TierColorKey, string>;
 
 const getRankEmblemUrl = (tier: string) =>
   `https://raw.communitydragon.org/latest/plugins/rcp-fe-lol-static-assets/global/default/images/ranked-mini-crests/${tier.toLowerCase()}.png`;

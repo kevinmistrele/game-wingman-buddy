@@ -93,13 +93,13 @@ const OverviewTab = ({ data }: { data: LolProfileResponse }) => {
           </h4>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
             <StatItem icon={<Flame className="h-4 w-4 text-orange-400" />} label="DMG MÉDIO" value={formatNumber(avgDamage)} />
-            <StatItem icon={<Coins className="h-4 w-4 text-yellow-400" />} label="OURO MÉDIO" value={formatNumber(avgGold)} />
-            <StatItem icon={<Eye className="h-4 w-4 text-blue-400" />} label="VISÃO MÉDIA" value={avgVision} />
+            <StatItem icon={<Coins className="h-4 w-4 text-warning" />} label="OURO MÉDIO" value={formatNumber(avgGold)} />
+            <StatItem icon={<Eye className="h-4 w-4 text-info" />} label="VISÃO MÉDIA" value={avgVision} />
             <StatItem icon={<TrendingUp className="h-4 w-4 text-emerald-400" />} label="CS/MIN" value={avgCsPerMin} />
           </div>
           <div className="flex items-center gap-3 pt-2 border-t border-border/50">
             <span className="text-xs text-muted-foreground font-display tracking-wider">KDA</span>
-            <span className={`font-display text-lg font-bold ${parseFloat(avgKda) >= 3 ? "text-primary" : parseFloat(avgKda) >= 2 ? "text-yellow-400" : "text-destructive"}`}>{avgKda}</span>
+            <span className={`font-display text-lg font-bold ${parseFloat(avgKda) >= 3 ? "text-primary" : parseFloat(avgKda) >= 2 ? "text-warning" : "text-destructive"}`}>{avgKda}</span>
             <div className="flex-1">
               <Progress value={Math.min(parseFloat(avgKda) / 5 * 100, 100)} className="h-2" />
             </div>

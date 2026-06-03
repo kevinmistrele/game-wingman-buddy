@@ -98,14 +98,14 @@ const LolProfile = ({ data }: { data: LolProfileResponse }) => {
 
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
             <StatItem icon={<Flame className="h-4 w-4 text-orange-400" />} label="DMG MÉDIO" value={formatNumber(avgDamage)} />
-            <StatItem icon={<Coins className="h-4 w-4 text-yellow-400" />} label="OURO MÉDIO" value={formatNumber(avgGold)} />
-            <StatItem icon={<Eye className="h-4 w-4 text-blue-400" />} label="VISÃO MÉDIA" value={avgVision} />
+            <StatItem icon={<Coins className="h-4 w-4 text-warning" />} label="OURO MÉDIO" value={formatNumber(avgGold)} />
+            <StatItem icon={<Eye className="h-4 w-4 text-info" />} label="VISÃO MÉDIA" value={avgVision} />
             <StatItem icon={<TrendingUp className="h-4 w-4 text-emerald-400" />} label="CS/MIN" value={avgCsPerMin} />
           </div>
 
           <div className="flex items-center gap-3 pt-2 border-t border-border/50">
             <span className="text-xs text-muted-foreground font-display tracking-wider">KDA</span>
-            <span className={`font-display text-lg font-bold ${parseFloat(avgKda) >= 3 ? "text-primary" : parseFloat(avgKda) >= 2 ? "text-yellow-400" : "text-destructive"}`}>
+            <span className={`font-display text-lg font-bold ${parseFloat(avgKda) >= 3 ? "text-primary" : parseFloat(avgKda) >= 2 ? "text-warning" : "text-destructive"}`}>
               {avgKda}
             </span>
             <div className="flex-1">
@@ -159,7 +159,7 @@ const LolProfile = ({ data }: { data: LolProfileResponse }) => {
                     <p className="text-xs text-muted-foreground">{cs.games} partidas • {cs.wins}W {cs.losses}L</p>
                   </div>
                   <div className="text-right">
-                    <p className={`font-display text-sm font-bold ${wr >= 60 ? "text-primary" : wr >= 50 ? "text-yellow-400" : "text-destructive"}`}>{wr}% WR</p>
+                    <p className={`font-display text-sm font-bold ${wr >= 60 ? "text-primary" : wr >= 50 ? "text-warning" : "text-destructive"}`}>{wr}% WR</p>
                     <p className="text-xs text-muted-foreground">{kda} KDA</p>
                   </div>
                   <div className="w-16 hidden sm:block">

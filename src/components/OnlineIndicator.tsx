@@ -17,7 +17,7 @@ const OnlineIndicator = ({ lastSeen, size = "sm", className = "" }: OnlineIndica
   return (
     <span
       className={`absolute bottom-0 right-0 block ${sizeClasses} rounded-full border-2 border-card ${
-        online ? "bg-green-500" : "bg-muted-foreground/40"
+        online ? "bg-status-online" : "bg-status-offline/40"
       } ${className}`}
     />
   );

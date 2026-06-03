@@ -76,7 +76,7 @@ const MatchHistoryCard = ({ match }: MatchHistoryCardProps) => {
           <p className="font-display text-sm font-bold text-foreground">
             {match.kills}/{match.deaths}/{match.assists}
           </p>
-          <p className={`text-xs font-display font-bold ${parseFloat(kda) >= 3 || kda === "Perfect" ? "text-primary" : parseFloat(kda) >= 2 ? "text-yellow-400" : "text-muted-foreground"}`}>
+          <p className={`text-xs font-display font-bold ${parseFloat(kda) >= 3 || kda === "Perfect" ? "text-primary" : parseFloat(kda) >= 2 ? "text-warning" : "text-muted-foreground"}`}>
             {kda} KDA
           </p>
         </div>
@@ -114,12 +114,12 @@ const MatchHistoryCard = ({ match }: MatchHistoryCardProps) => {
                   <span className="font-display font-bold text-foreground ml-auto">{formatNumber(match.damage)}</span>
                 </div>
                 <div className="flex items-center gap-1.5 text-xs">
-                  <Coins className="h-3.5 w-3.5 text-yellow-400" />
+                  <Coins className="h-3.5 w-3.5 text-warning" />
                   <span className="text-muted-foreground">Ouro</span>
                   <span className="font-display font-bold text-foreground ml-auto">{formatNumber(match.goldEarned)}</span>
                 </div>
                 <div className="flex items-center gap-1.5 text-xs">
-                  <Eye className="h-3.5 w-3.5 text-blue-400" />
+                  <Eye className="h-3.5 w-3.5 text-info" />
                   <span className="text-muted-foreground">Visão</span>
                   <span className="font-display font-bold text-foreground ml-auto">{match.visionScore}</span>
                 </div>

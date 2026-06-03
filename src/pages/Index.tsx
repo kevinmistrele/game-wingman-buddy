@@ -372,7 +372,7 @@ const Index = () => {
               <div className="text-right">
                 <p className="font-display text-xs font-semibold text-primary">{player.rank}</p>
                 <div className="flex items-center gap-1 justify-end">
-                  <span className="h-1.5 w-1.5 rounded-full bg-green-500 animate-pulse" />
+                  <span className="h-1.5 w-1.5 rounded-full bg-status-online animate-pulse" />
                   <span className="text-xs text-muted-foreground">Online</span>
                 </div>
               </div>
