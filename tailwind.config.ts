@@ -1,110 +1,122 @@
 import type { Config } from "tailwindcss";
+import {
+  fontFamily,
+  fontSize,
+  tierColorValues,
+  statusColorValues,
+  keyframes,
+  tailwindAnimation,
+  container,
+  zIndex,
+  borderRadius,
+} from "./src/design-system/tokens";
 
 export default {
   darkMode: ["class"],
-  content: ["./pages/**/*.{ts,tsx}", "./components/**/*.{ts,tsx}", "./app/**/*.{ts,tsx}", "./src/**/*.{ts,tsx}"],
+  content: [
+    "./pages/**/*.{ts,tsx}",
+    "./components/**/*.{ts,tsx}",
+    "./app/**/*.{ts,tsx}",
+    "./src/**/*.{ts,tsx}",
+  ],
   prefix: "",
   theme: {
     container: {
       center: true,
-      padding: "2rem",
-      screens: {
-        "2xl": "1400px",
-      },
+      padding: container.padding,
+      screens: { "2xl": container.maxWidth },
     },
     extend: {
-      fontSize: {
-        "xs": ["0.875rem", { lineHeight: "1.4" }],   // 14px min
-        "sm": ["1rem", { lineHeight: "1.5" }],        // 16px
-        "base": ["1rem", { lineHeight: "1.5" }],      // 16px
-        "md": ["1.125rem", { lineHeight: "1.5" }],    // 18px
-        "lg": ["1.5rem", { lineHeight: "1.3" }],      // 24px
-        "xl": ["2rem", { lineHeight: "1.2" }],        // 32px
-        "2xl": ["2rem", { lineHeight: "1.2" }],       // 32px
-        "3xl": ["2.25rem", { lineHeight: "1.2" }],
-        "4xl": ["2.75rem", { lineHeight: "1.1" }],
-        "5xl": ["3.5rem", { lineHeight: "1.1" }],
-        "6xl": ["4rem", { lineHeight: "1.05" }],
-        "7xl": ["5rem", { lineHeight: "1.05" }],
-      },
-      fontFamily: {
-        display: ["Rajdhani", "sans-serif"],
-        body: ["Inter", "sans-serif"],
-      },
+      // ─── Typography ─────────────────────────────────────────────────────
+      fontFamily,
+      fontSize,
+
+      // ─── Colors ─────────────────────────────────────────────────────────
+      // Semantic colors reference CSS custom properties set in index.css.
+      // Tier and status colors reference CSS vars generated from token values.
       colors: {
-        border: "hsl(var(--border))",
-        input: "hsl(var(--input))",
-        ring: "hsl(var(--ring))",
+        border:     "hsl(var(--border))",
+        input:      "hsl(var(--input))",
+        ring:       "hsl(var(--ring))",
         background: "hsl(var(--background))",
         foreground: "hsl(var(--foreground))",
         primary: {
-          DEFAULT: "hsl(var(--primary))",
+          DEFAULT:    "hsl(var(--primary))",
           foreground: "hsl(var(--primary-foreground))",
         },
         secondary: {
-          DEFAULT: "hsl(var(--secondary))",
+          DEFAULT:    "hsl(var(--secondary))",
           foreground: "hsl(var(--secondary-foreground))",
         },
         destructive: {
-          DEFAULT: "hsl(var(--destructive))",
+          DEFAULT:    "hsl(var(--destructive))",
           foreground: "hsl(var(--destructive-foreground))",
         },
+        warning: {
+          DEFAULT:    "hsl(var(--warning))",
+          foreground: "hsl(var(--warning-foreground))",
+        },
+        info: {
+          DEFAULT:    "hsl(var(--info))",
+          foreground: "hsl(var(--info-foreground))",
+        },
         muted: {
-          DEFAULT: "hsl(var(--muted))",
+          DEFAULT:    "hsl(var(--muted))",
           foreground: "hsl(var(--muted-foreground))",
         },
         accent: {
-          DEFAULT: "hsl(var(--accent))",
+          DEFAULT:    "hsl(var(--accent))",
           foreground: "hsl(var(--accent-foreground))",
         },
         popover: {
-          DEFAULT: "hsl(var(--popover))",
+          DEFAULT:    "hsl(var(--popover))",
           foreground: "hsl(var(--popover-foreground))",
         },
         card: {
-          DEFAULT: "hsl(var(--card))",
+          DEFAULT:    "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
         sidebar: {
-          DEFAULT: "hsl(var(--sidebar-background))",
-          foreground: "hsl(var(--sidebar-foreground))",
-          primary: "hsl(var(--sidebar-primary))",
-          "primary-foreground": "hsl(var(--sidebar-primary-foreground))",
-          accent: "hsl(var(--sidebar-accent))",
-          "accent-foreground": "hsl(var(--sidebar-accent-foreground))",
-          border: "hsl(var(--sidebar-border))",
-          ring: "hsl(var(--sidebar-ring))",
+          DEFAULT:            "hsl(var(--sidebar-background))",
+          foreground:         "hsl(var(--sidebar-foreground))",
+          primary:            "hsl(var(--sidebar-primary))",
+          "primary-foreground":"hsl(var(--sidebar-primary-foreground))",
+          accent:             "hsl(var(--sidebar-accent))",
+          "accent-foreground":"hsl(var(--sidebar-accent-foreground))",
+          border:             "hsl(var(--sidebar-border))",
+          ring:               "hsl(var(--sidebar-ring))",
         },
+        // Rank tier utilities — text-tier-gold, bg-tier-diamond, etc.
+        tier: Object.fromEntries(
+          Object.entries(tierColorValues).map(([key]) => [
+            key.toLowerCase(),
+            `hsl(var(--tier-${key.toLowerCase()}))`,
+          ])
+        ),
+        // Status utilities — text-status-online, bg-status-offline, etc.
+        status: Object.fromEntries(
+          Object.keys(statusColorValues).map((key) => [
+            key,
+            `hsl(var(--status-${key}))`,
+          ])
+        ),
       },
+
+      // ─── Border Radius ───────────────────────────────────────────────────
       borderRadius: {
-        lg: "var(--radius)",
-        md: "calc(var(--radius) - 2px)",
-        sm: "calc(var(--radius) - 4px)",
+        lg: `var(--radius)`,
+        md: `calc(var(--radius) - 2px)`,
+        sm: `calc(var(--radius) - 4px)`,
       },
-      keyframes: {
-        "accordion-down": {
-          from: { height: "0" },
-          to: { height: "var(--radix-accordion-content-height)" },
-        },
-        "accordion-up": {
-          from: { height: "var(--radix-accordion-content-height)" },
-          to: { height: "0" },
-        },
-        "pulse-glow": {
-          "0%, 100%": { opacity: "0.4" },
-          "50%": { opacity: "1" },
-        },
-        "scan-line": {
-          "0%": { transform: "translateY(-100%)" },
-          "100%": { transform: "translateY(100%)" },
-        },
-      },
-      animation: {
-        "accordion-down": "accordion-down 0.2s ease-out",
-        "accordion-up": "accordion-up 0.2s ease-out",
-        "pulse-glow": "pulse-glow 2s ease-in-out infinite",
-        "scan-line": "scan-line 3s linear infinite",
-      },
+
+      // ─── Z-Index ─────────────────────────────────────────────────────────
+      zIndex: Object.fromEntries(
+        Object.entries(zIndex).map(([k, v]) => [k, String(v)])
+      ),
+
+      // ─── Animations ──────────────────────────────────────────────────────
+      keyframes,
+      animation: tailwindAnimation,
     },
   },
   plugins: [require("tailwindcss-animate")],

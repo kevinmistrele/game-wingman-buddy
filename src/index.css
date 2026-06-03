@@ -30,6 +30,12 @@
     --destructive: 0 72% 55%;
     --destructive-foreground: 210 40% 98%;
 
+    --warning: 38 92% 50%;
+    --warning-foreground: 220 20% 7%;
+
+    --info: 210 80% 65%;
+    --info-foreground: 220 20% 7%;
+
     --border: 220 15% 18%;
     --input: 220 15% 18%;
     --ring: 175 85% 50%;
@@ -45,14 +51,35 @@
     --sidebar-border: 220 15% 16%;
     --sidebar-ring: 175 85% 50%;
 
-    /* Custom tokens */
-    --glow-primary: 0 0 20px hsl(175 85% 50% / 0.3);
-    --glow-secondary: 0 0 20px hsl(35 95% 55% / 0.3);
-    --glow-accent: 0 0 20px hsl(260 70% 60% / 0.3);
-    --gradient-hero: linear-gradient(135deg, hsl(175 85% 50% / 0.15), hsl(260 70% 60% / 0.1));
+    /* ── Effects ─────────────────────────────────────────────────────────── */
+    --glow-primary:   0 0 20px hsl(175 85% 50% / 0.35);
+    --glow-secondary: 0 0 20px hsl(35 95% 55% / 0.35);
+    --glow-accent:    0 0 20px hsl(260 70% 60% / 0.35);
+
+    --gradient-hero: linear-gradient(135deg, hsl(175 85% 50% / 0.15), hsl(260 70% 60% / 0.10));
     --gradient-card: linear-gradient(180deg, hsl(220 18% 12%), hsl(220 18% 8%));
+
+    /* ── Font Variables ───────────────────────────────────────────────────── */
     --font-display: 'Rajdhani', sans-serif;
-    --font-body: 'Inter', sans-serif;
+    --font-body:    'Inter', sans-serif;
+
+    /* ── Rank Tier Colors (static — no theme variant) ────────────────────── */
+    --tier-iron:        220 10% 55%;
+    --tier-bronze:      25 60% 50%;
+    --tier-silver:      220 10% 65%;
+    --tier-gold:        35 95% 55%;
+    --tier-platinum:    175 60% 50%;
+    --tier-emerald:     140 60% 50%;
+    --tier-diamond:     210 80% 65%;
+    --tier-master:      260 70% 60%;
+    --tier-grandmaster: 0 72% 55%;
+    --tier-challenger:  45 100% 60%;
+
+    /* ── Status Colors (static) ──────────────────────────────────────────── */
+    --status-online:  142 71% 45%;
+    --status-offline: 220 10% 40%;
+    --status-away:    35 95% 55%;
+    --status-busy:    0 72% 55%;
   }
 
   /* Light theme */
@@ -81,6 +108,12 @@
     --destructive: 0 72% 50%;
     --destructive-foreground: 0 0% 100%;
 
+    --warning: 38 85% 45%;
+    --warning-foreground: 220 20% 7%;
+
+    --info: 210 70% 55%;
+    --info-foreground: 0 0% 100%;
+
     --border: 210 15% 85%;
     --input: 210 15% 85%;
     --ring: 175 85% 38%;
@@ -94,9 +127,10 @@
     --sidebar-border: 210 15% 85%;
     --sidebar-ring: 175 85% 38%;
 
-    --glow-primary: 0 0 20px hsl(175 85% 38% / 0.2);
-    --glow-secondary: 0 0 20px hsl(35 95% 48% / 0.2);
-    --glow-accent: 0 0 20px hsl(260 60% 55% / 0.2);
+    --glow-primary:   0 0 20px hsl(175 85% 38% / 0.20);
+    --glow-secondary: 0 0 20px hsl(35 95% 48% / 0.20);
+    --glow-accent:    0 0 20px hsl(260 60% 55% / 0.20);
+
     --gradient-hero: linear-gradient(135deg, hsl(175 85% 38% / 0.08), hsl(260 60% 55% / 0.05));
     --gradient-card: linear-gradient(180deg, hsl(0 0% 100%), hsl(210 15% 97%));
   }
@@ -137,28 +171,39 @@
 }
 
 @layer utilities {
-  .text-glow-primary {
-    text-shadow: var(--glow-primary);
-  }
-  .text-glow-secondary {
-    text-shadow: var(--glow-secondary);
-  }
-  .box-glow-primary {
-    box-shadow: var(--glow-primary);
-  }
-  .box-glow-secondary {
-    box-shadow: var(--glow-secondary);
-  }
-  .gradient-hero {
-    background: var(--gradient-hero);
-  }
-  .gradient-card {
-    background: var(--gradient-card);
-  }
+  /* ── Glow ─────────────────────────────────────────────────────────────── */
+  .text-glow-primary   { text-shadow: var(--glow-primary); }
+  .text-glow-secondary { text-shadow: var(--glow-secondary); }
+  .text-glow-accent    { text-shadow: var(--glow-accent); }
+
+  .box-glow-primary    { box-shadow: var(--glow-primary); }
+  .box-glow-secondary  { box-shadow: var(--glow-secondary); }
+  .box-glow-accent     { box-shadow: var(--glow-accent); }
+
+  /* ── Gradients ────────────────────────────────────────────────────────── */
+  .gradient-hero { background: var(--gradient-hero); }
+  .gradient-card { background: var(--gradient-card); }
+
+  /* ── Clip Paths ───────────────────────────────────────────────────────── */
   .clip-angle {
-    clip-path: polygon(0 0, calc(100% - 12px) 0, 100% 12px, 100% 100%, 12px 100%, 0 calc(100% - 12px));
+    clip-path: polygon(
+      0 0,
+      calc(100% - 12px) 0,
+      100% 12px,
+      100% 100%,
+      12px 100%,
+      0 calc(100% - 12px)
+    );
   }
+
   .clip-angle-sm {
-    clip-path: polygon(0 0, calc(100% - 8px) 0, 100% 8px, 100% 100%, 8px 100%, 0 calc(100% - 8px));
+    clip-path: polygon(
+      0 0,
+      calc(100% - 8px) 0,
+      100% 8px,
+      100% 100%,
+      8px 100%,
+      0 calc(100% - 8px)
+    );
   }
 }
