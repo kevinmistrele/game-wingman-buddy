@@ -124,14 +124,11 @@ function Auth() {
             <motion.img
               src={logo}
               alt="Game Matching"
-              className="h-14 w-14"
+              className="h-20"
               initial={{ scale: 0.5, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               transition={{ delay: 0.15, type: "spring", stiffness: 200 }}
             />
-            <h1 className="font-display text-2xl font-bold tracking-wider text-primary text-glow-primary">
-              GAME MATCHING
-            </h1>
             <AnimatePresence mode="wait">
               <motion.div
                 key={isSignUp ? "signup" : "signin"}
