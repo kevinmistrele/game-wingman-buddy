@@ -145,6 +145,8 @@ const ProfileCard = () => {
 
   const initials = profile.username.slice(0, 2).toUpperCase();
   const displayEmail = user?.email ?? "";
+  const googleAvatar = user?.user_metadata?.avatar_url ?? user?.user_metadata?.picture ?? null;
+  const avatarSrc = profile.avatar_url ?? googleAvatar;
 
   return (
       <motion.div
@@ -158,8 +160,8 @@ const ProfileCard = () => {
               <div className="h-20 w-20 rounded-full border-2 border-primary/40 bg-muted flex items-center justify-center font-display text-2xl font-bold text-primary box-glow-primary overflow-hidden">
                 {uploading ? (
                   <Loader2 className="h-6 w-6 animate-spin text-primary" />
-                ) : profile.avatar_url ? (
-                  <img src={profile.avatar_url} alt="" className="h-full w-full rounded-full object-cover" />
+                ) : avatarSrc ? (
+                  <img src={avatarSrc} alt="" className="h-full w-full rounded-full object-cover" />
                 ) : (
                   initials
                 )}
