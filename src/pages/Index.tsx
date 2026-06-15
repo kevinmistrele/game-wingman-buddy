@@ -28,28 +28,26 @@ const FloatingParticle = ({ delay, x, size }: { delay: number; x: number; size: 
   />
 );
 
+const ACTIVITIES = [
+  "🎮 Match iniciado agora — Gold II vs Gold III",
+  "⚡ Jogador encontrado em 8s — Platina I",
+  "🔥 +1 jogador entrou na fila — Diamante IV",
+  "🎯 Match aceito — Prata III vs Prata II",
+  "✨ Novo jogador se cadastrou — bem-vindo!",
+  "⚔️ Duo formado — Ouro I + Ouro II",
+];
+
 const Index = () => {
   const { user, loading } = useAuth();
   const [activityIndex, setActivityIndex] = useState(0);
   const [matchStep, setMatchStep] = useState(0);
 
-  if (!loading && !user) return <Navigate to="/auth" replace />;
-
-  const activities = [
-    "🎮 Match iniciado agora — Gold II vs Gold III",
-    "⚡ Jogador encontrado em 8s — Platina I",
-    "🔥 +1 jogador entrou na fila — Diamante IV",
-    "🎯 Match aceito — Prata III vs Prata II",
-    "✨ Novo jogador se cadastrou — bem-vindo!",
-    "⚔️ Duo formado — Ouro I + Ouro II",
-  ];
-
   useEffect(() => {
     const interval = setInterval(() => {
-      setActivityIndex((i) => (i + 1) % activities.length);
+      setActivityIndex((i) => (i + 1) % ACTIVITIES.length);
     }, 3000);
     return () => clearInterval(interval);
-  }, [activities.length]);
+  }, []);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -57,6 +55,8 @@ const Index = () => {
     }, 4000);
     return () => clearInterval(interval);
   }, []);
+
+  if (!loading && !user) return <Navigate to="/auth" replace />;
 
   const steps = [
     { icon: UserPlus, title: "Crie sua conta", desc: "Cadastre-se e vincule seu Riot ID" },
@@ -172,7 +172,7 @@ const Index = () => {
                 transition={{ duration: 0.4 }}
                 className="text-xs text-muted-foreground/70"
               >
-                {activities[activityIndex]}
+                {ACTIVITIES[activityIndex]}
               </motion.p>
             </AnimatePresence>
           </motion.div>
