@@ -123,14 +123,14 @@ function Auth() {
           <div className="flex flex-col items-center gap-3 mb-8">
             <motion.img
               src={logo}
-              alt="MatchGaming"
+              alt="Game Matching"
               className="h-14 w-14"
               initial={{ scale: 0.5, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               transition={{ delay: 0.15, type: "spring", stiffness: 200 }}
             />
             <h1 className="font-display text-2xl font-bold tracking-wider text-primary text-glow-primary">
-              MATCHGAMING
+              GAME MATCHING
             </h1>
             <AnimatePresence mode="wait">
               <motion.div

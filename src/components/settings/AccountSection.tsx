@@ -45,7 +45,7 @@ export function AccountSection() {
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `matchgaming-data-${new Date().toISOString().split("T")[0]}.json`;
+      a.download = `game-matching-data-${new Date().toISOString().split("T")[0]}.json`;
       a.click();
       URL.revokeObjectURL(url);
       toast.success("Dados exportados com sucesso!");

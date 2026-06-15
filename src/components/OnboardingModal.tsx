@@ -79,7 +79,7 @@ const OnboardingModal = ({ userId, defaultUsername, onComplete }: OnboardingModa
         className="clip-angle border border-border gradient-card p-8 max-w-md w-full mx-4"
       >
         <div className="flex flex-col items-center gap-3 mb-6">
-          <img src={logo} alt="MatchGaming" className="h-10 w-10" />
+          <img src={logo} alt="Game Matching" className="h-10 w-10" />
           <h2 className="font-display text-xl font-bold tracking-wider text-primary">
             CONFIGURAR PERFIL
           </h2>

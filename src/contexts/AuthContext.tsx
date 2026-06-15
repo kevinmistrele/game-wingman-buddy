@@ -57,9 +57,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const checkOnboarding = (u: User, p: Profile | null) => {
     const isOAuth = u.app_metadata?.provider === "google";
+    if (!isOAuth || !p) return;
     const emailPrefix = u.email?.split("@")[0] ?? "";
-    const usernameIsDefault = p?.username === emailPrefix;
-    if (isOAuth && p && usernameIsDefault) setNeedsOnboarding(true);
+    const usernameIsDefault = p.username === emailPrefix;
+    const hasCompletedSetup = !!p.riot_id || !usernameIsDefault;
+    if (!hasCompletedSetup) setNeedsOnboarding(true);
   };
 
   const refreshProfile = async () => {

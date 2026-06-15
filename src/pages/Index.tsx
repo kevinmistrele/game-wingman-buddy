@@ -186,7 +186,7 @@ const Index = () => {
           viewport={{ once: true }}
         >
           <h2 className="font-display text-sm tracking-[0.3em] text-muted-foreground">
-            O QUE É O MATCHGAMING?
+            O QUE É O GAME MATCHING?
           </h2>
           <p className="mx-auto mt-4 max-w-2xl text-lg text-foreground/80">
             Uma plataforma que conecta jogadores de League of Legends com base em elo e preferências, para que você encontre o parceiro ideal.
@@ -319,7 +319,7 @@ const Index = () => {
           viewport={{ once: true }}
           className="text-center font-display text-sm tracking-[0.3em] text-muted-foreground mb-12"
         >
-          POR QUE MATCHGAMING?
+          POR QUE GAME MATCHING?
         </motion.h2>
         <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
           {highlights.map((h, i) => (

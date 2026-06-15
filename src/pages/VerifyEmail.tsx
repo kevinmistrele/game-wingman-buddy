@@ -81,7 +81,7 @@ const VerifyEmail = () => {
           <div className="flex flex-col items-center gap-3 mb-6">
             <motion.img
               src={logo}
-              alt="MatchGaming"
+              alt="Game Matching"
               className="h-14 w-14"
               initial={{ scale: 0.5, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
