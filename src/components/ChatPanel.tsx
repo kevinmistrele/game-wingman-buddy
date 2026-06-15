@@ -4,7 +4,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import type { Tables } from "@/integrations/supabase/types";
 import ConfirmModal from "./ConfirmModal";
-import OnlineIndicator, { isUserOnline } from "./OnlineIndicator";
+import OnlineIndicator from "./OnlineIndicator";
+import { useOnlineStatus } from "@/contexts/OnlineStatusContext";
 
 type Message = Tables<"messages">;
 
@@ -33,6 +34,7 @@ const ChatPanel = ({
   otherUserId, isFriend, hasPendingRequest, onSendFriendRequest, onBlockUser,
 }: ChatPanelProps) => {
   const { user } = useAuth();
+  const { isOnline } = useOnlineStatus();
   const [input, setInput] = useState("");
   const bottomRef = useRef<HTMLDivElement>(null);
   const [quickMessagesSent, setQuickMessagesSent] = useState(false);
@@ -89,14 +91,14 @@ const ChatPanel = ({
           <div className="h-10 w-10 sm:h-12 sm:w-12 rounded-full bg-muted flex items-center justify-center font-display text-sm sm:text-base font-bold text-primary">
             {otherUsername?.slice(0, 2).toUpperCase() ?? "??"}
           </div>
-          <OnlineIndicator lastSeen={otherLastSeen} />
+          <OnlineIndicator userId={otherUserId} />
         </div>
         <div className="flex-1 min-w-0">
           <p className="font-display text-sm font-semibold tracking-wide text-foreground truncate">
             {otherUsername ?? "Player"}
           </p>
           <p className="text-[10px] text-muted-foreground/60">
-            {isUserOnline(otherLastSeen) ? "Online" : "Offline"}
+            {otherUserId && isOnline(otherUserId) ? "Online" : "Offline"}
           </p>
         </div>
         <div className="flex items-center gap-1 sm:gap-1.5 flex-shrink-0">

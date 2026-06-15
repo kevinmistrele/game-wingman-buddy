@@ -2,17 +2,16 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
-import { lovable } from "@/integrations/lovable";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { Gamepad2, Mail, Lock, User, Chrome, Crosshair, Loader2 } from "lucide-react";
 import logo from "@/assets/logo.png";
+import { validateRiotId as checkRiotId } from "@/lib/validators";
+import { parseApiError } from "@/lib/errors";
 
-const RIOT_ID_REGEX = /^.{3,16}#[A-Za-z0-9]{3,5}$/;
-
-const Auth = () => {
+function Auth() {
   const navigate = useNavigate();
   const [isSignUp, setIsSignUp] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -22,15 +21,11 @@ const Auth = () => {
   const [riotId, setRiotId] = useState("");
   const [riotIdError, setRiotIdError] = useState("");
 
-  const validateRiotId = (value: string) => {
-    if (!value) { setRiotIdError(""); return true; }
-    if (!RIOT_ID_REGEX.test(value)) {
-      setRiotIdError("Formato inválido. Use Nome#TAG (ex: Player#BR1, Gamer#1234)");
-      return false;
-    }
-    setRiotIdError("");
-    return true;
-  };
+  function validateRiotId(value: string): boolean {
+    const error = checkRiotId(value);
+    setRiotIdError(error ?? "");
+    return error === null;
+  }
 
   const handleEmailAuth = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -83,29 +78,26 @@ const Auth = () => {
         toast.success("Bem-vindo de volta!");
         navigate("/");
       }
-    } catch (error: any) {
-      toast.error(error.message);
+    } catch (error) {
+      toast.error(parseApiError(error));
     } finally {
       setLoading(false);
     }
-  };
+  }
 
-  const handleGoogleSignIn = async () => {
+  async function handleGoogleSignIn() {
     setLoading(true);
     try {
-      const result = await lovable.auth.signInWithOAuth("google", {
-        redirect_uri: window.location.origin,
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: { redirectTo: window.location.origin },
       });
-      if (result.error) throw result.error;
-      if (result.redirected) return;
-      toast.success("Login com Google realizado!");
-      navigate("/");
-    } catch (error: any) {
-      toast.error(error.message || "Falha no login com Google");
-    } finally {
+      if (error) throw error;
+    } catch (error) {
+      toast.error(parseApiError(error));
       setLoading(false);
     }
-  };
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background relative overflow-hidden">
@@ -304,6 +296,6 @@ const Auth = () => {
       </motion.div>
     </div>
   );
-};
+}
 
 export default Auth;

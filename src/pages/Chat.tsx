@@ -47,7 +47,7 @@ const Chat = () => {
   const activeConvo = conversations.find((c) => c.id === activeConversation);
   const otherUsername = activeConvo?.otherProfile?.username ?? undefined;
   const otherDiscord = activeConvo?.otherProfile?.discord_username ?? undefined;
-  const otherLastSeen = (activeConvo?.otherProfile as any)?.last_seen ?? null;
+  const otherLastSeen = activeConvo?.otherProfile?.last_seen ?? null;
   const otherUserId = activeConvo?.otherProfile?.user_id ?? undefined;
 
   const isFriend = otherUserId

@@ -34,9 +34,9 @@ const ProfileCard = () => {
     : null;
 
   const hasRiotRank = !!riotRank;
-  const profileManualTier = (profile as any)?.rank_tier as string | null;
-  const profileManualDivision = (profile as any)?.rank_division as string | null;
-  const profileRankSource = (profile as any)?.rank_source as string | null;
+  const profileManualTier = profile?.rank_tier ?? null;
+  const profileManualDivision = profile?.rank_division ?? null;
+  const profileRankSource = profile?.rank_source ?? null;
 
   useEffect(() => {
     if (!profile || !user || !riotRank) return;
@@ -48,7 +48,7 @@ const ProfileCard = () => {
         rank_division: riotRank.rank,
         rank_source: "riot",
         rank: `${TIER_LABELS[riotRank.tier] ?? riotRank.tier} ${riotRank.rank}`,
-      } as any).eq("user_id", user.id).then(() => refreshProfile());
+      }).eq("user_id", user.id).then(() => refreshProfile());
     }
   }, [riotRank, profile, user]);
 
@@ -113,21 +113,21 @@ const ProfileCard = () => {
       const division = highTiers.includes(manualTier) ? "I" : (manualDivision || "IV");
       const rankDisplay = tier ? `${TIER_LABELS[tier] ?? tier} ${highTiers.includes(tier) ? "" : division}`.trim() : null;
 
-      const updatePayload: any = {
+      const basePayload = {
         username: username.trim(),
-        preferred_game: "lol",
+        preferred_game: "lol" as const,
         discord_username: discordUsername || null,
         riot_id: riotId.trim() || null,
       };
 
-      if (!hasRiotRank) {
-        updatePayload.rank_tier = tier;
-        updatePayload.rank_division = division;
-        updatePayload.rank_source = tier ? "manual" : null;
-        updatePayload.rank = rankDisplay;
-      }
+      const rankPayload = !hasRiotRank ? {
+        rank_tier: tier,
+        rank_division: division,
+        rank_source: tier ? "manual" : null,
+        rank: rankDisplay,
+      } : {};
 
-      const { error } = await supabase.from("profiles").update(updatePayload).eq("user_id", profile.user_id);
+      const { error } = await supabase.from("profiles").update({ ...basePayload, ...rankPayload }).eq("user_id", profile.user_id);
       if (error) {
         if (error.message.includes("profiles_username_unique")) toast.error("Este nome de usuário já está em uso.");
         else if (error.message.includes("profiles_riot_id_unique")) toast.error("Este Riot ID já está vinculado a outra conta.");

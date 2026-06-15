@@ -1,22 +1,22 @@
 import { useState, useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { Crosshair, X, Check, Clock, Users, AlertTriangle, Loader2, CheckCircle2, AlertCircle } from "lucide-react";
-import { useMatchmaking } from "@/hooks/useMatchmaking";
-import { QUEUE_MODES, ROLES, type QueueMode, type Role } from "@/lib/eloUtils";
-import { TIER_LABELS } from "@/lib/eloUtils";
-import RankBadge from "@/components/RankBadge";
-import RoleIcon, { ROLE_LABELS } from "@/components/RoleIcon";
-import { Skeleton } from "@/components/ui/skeleton";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { toast } from "sonner";
+import { AnimatePresence, motion } from "framer-motion";
+import { Loader2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { useMatchmaking } from "@/hooks/useMatchmaking";
 import { useAuth } from "@/contexts/AuthContext";
+import { QueueForm } from "@/components/matchmaking/QueueForm";
+import { SearchingView } from "@/components/matchmaking/SearchingView";
+import { MatchFoundView } from "@/components/matchmaking/MatchFoundView";
+import { parseApiError } from "@/lib/errors";
+import { type QueueMode, type Role } from "@/lib/eloUtils";
+import { toast } from "sonner";
 
-const MatchmakingQueue = () => {
+function MatchmakingQueue() {
   const navigate = useNavigate();
   const { profile } = useAuth();
   const {
-    status, matchedPlayer, myRank, myRankSource, queueCounts, otherAccepted, acceptedConvoId, searchPhase,
+    status, matchedPlayer, myRank, myRankSource, queueCounts,
+    otherAccepted, acceptedConvoId, searchPhase,
     joinQueue, cancelQueue, respondToMatch,
   } = useMatchmaking();
 
@@ -26,19 +26,19 @@ const MatchmakingQueue = () => {
   const [selectedDesiredRole, setSelectedDesiredRole] = useState<Role | null>(null);
   const [joiningQueue, setJoiningQueue] = useState(false);
   const [respondingMatch, setRespondingMatch] = useState<"accept" | "decline" | null>(null);
-  // Pre-fill from profile preferences whenever profile updates
+
+  // Pre-fill role preferences from profile
   useEffect(() => {
     if (!profile) return;
-    const pRole = (profile as any)?.preferred_role as string | null;
-    const pDuoRole = (profile as any)?.preferred_duo_role as string | null;
-    setSelectedMyRole(pRole as Role ?? null);
-    setSelectedDesiredRole(pDuoRole as Role ?? null);
+    setSelectedMyRole((profile.preferred_role as Role) ?? null);
+    setSelectedDesiredRole((profile.preferred_duo_role as Role) ?? null);
   }, [profile]);
 
+  // Timer while searching
   useEffect(() => {
     if (status !== "searching") { setTimer(0); return; }
     setJoiningQueue(false);
-    const interval = setInterval(() => setTimer((p) => p + 1), 1000);
+    const interval = setInterval(() => setTimer(p => p + 1), 1000);
     return () => clearInterval(interval);
   }, [status]);
 
@@ -47,211 +47,67 @@ const MatchmakingQueue = () => {
     if (status === "idle") setRespondingMatch(null);
   }, [status]);
 
+  // Navigate to chat when both accepted
   useEffect(() => {
-    if (acceptedConvoId) {
-      toast.success("Match aceito! Abrindo chat...");
-      setTimeout(() => navigate(`/chat?convo=${acceptedConvoId}`), 800);
-    }
+    if (!acceptedConvoId) return;
+    toast.success("Match aceito! Abrindo chat...");
+    setTimeout(() => navigate(`/chat?convo=${acceptedConvoId}`), 800);
   }, [acceptedConvoId, navigate]);
 
-  const handleStart = async () => {
-    setJoiningQueue(true);
-    try { await joinQueue(selectedMode, selectedMyRole, selectedDesiredRole); }
-    catch (e: any) { toast.error(e.message || "Falha ao entrar na fila"); setJoiningQueue(false); }
-  };
-
-  const handleRespond = async (accepted: boolean) => {
-    setRespondingMatch(accepted ? "accept" : "decline");
-    try {
-      const convoId = await respondToMatch(accepted);
-      if (accepted && convoId) {
-        // Direct navigation fallback in case the acceptedConvoId effect is delayed
-        toast.success("Match aceito! Abrindo chat...");
-        setTimeout(() => navigate(`/chat?convo=${convoId}`), 400);
-      }
-    } catch (e) {
-      console.error("[matchmaking] respondToMatch failed", e);
-      setRespondingMatch(null);
-    }
-  };
-
-  const formatTime = (s: number) =>
-    `${Math.floor(s / 60)}:${(s % 60).toString().padStart(2, "0")}`;
-
-  const modeInfo = QUEUE_MODES.find((m) => m.value === selectedMode)!;
-  const isRanked = modeInfo.ranked;
-
-  // Reset roles when switching to non-ranked mode
+  // Reset roles when switching mode
+  const isRanked = ["solo_duo", "flex"].includes(selectedMode);
   useEffect(() => {
     if (!isRanked) {
       setSelectedMyRole(null);
       setSelectedDesiredRole(null);
     } else if (profile) {
-      // Re-apply preferences when switching back to ranked
-      const pRole = (profile as any)?.preferred_role as string | null;
-      const pDuoRole = (profile as any)?.preferred_duo_role as string | null;
-      setSelectedMyRole(pRole as Role ?? null);
-      setSelectedDesiredRole(pDuoRole as Role ?? null);
+      setSelectedMyRole((profile.preferred_role as Role) ?? null);
+      setSelectedDesiredRole((profile.preferred_duo_role as Role) ?? null);
     }
   }, [isRanked]);
+
+  async function handleStart() {
+    setJoiningQueue(true);
+    try {
+      await joinQueue(selectedMode, selectedMyRole, selectedDesiredRole);
+    } catch (e) {
+      toast.error(parseApiError(e));
+      setJoiningQueue(false);
+    }
+  }
+
+  async function handleRespond(accepted: boolean) {
+    setRespondingMatch(accepted ? "accept" : "decline");
+    try {
+      const convoId = await respondToMatch(accepted);
+      if (accepted && convoId) {
+        toast.success("Match aceito! Abrindo chat...");
+        setTimeout(() => navigate(`/chat?convo=${convoId}`), 400);
+      }
+    } catch {
+      setRespondingMatch(null);
+    }
+  }
 
   return (
     <div className="flex min-h-[60vh] flex-col items-center justify-center">
       <AnimatePresence mode="wait">
         {status === "idle" && !joiningQueue && (
-          <motion.div
-            key="idle"
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.9 }}
-            className="flex flex-col items-center gap-8 w-full max-w-lg"
-          >
-            {myRank && (
-              <motion.div
-                initial={{ opacity: 0, y: -10 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="border border-border gradient-card px-6 py-3 text-center"
-              >
-                <p className="font-display text-xs tracking-widest text-muted-foreground mb-2">SEU RANK</p>
-                <RankBadge tier={myRank.tier} rank={myRank.rank} winRate={myRank.winRate} size="lg" />
-                {myRankSource === "manual" && (
-                  <p className="text-xs text-muted-foreground/60 flex items-center justify-center gap-1 mt-1">
-                    <AlertTriangle className="h-3 w-3" /> Rank definido manualmente
-                  </p>
-                )}
-              </motion.div>
-            )}
-
-            {!myRank && isRanked && (
-              <div className="border border-destructive/30 bg-destructive/5 px-6 py-3 text-center flex items-center gap-2">
-                <AlertTriangle className="h-4 w-4 text-destructive" />
-                <p className="text-sm text-destructive">Sem rank — não é possível entrar em filas ranqueadas</p>
-              </div>
-            )}
-
-            <div className="w-full">
-              <h3 className="font-display text-xs tracking-[0.2em] text-muted-foreground text-center mb-3">SELECIONE O MODO</h3>
-              <div className="grid grid-cols-2 gap-3">
-                {QUEUE_MODES.map((mode) => {
-                  const count = queueCounts[mode.value] ?? 0;
-                  const isSelected = selectedMode === mode.value;
-                  const disabled = mode.ranked && !myRank;
-                  return (
-                    <button
-                      key={mode.value}
-                      onClick={() => !disabled && setSelectedMode(mode.value)}
-                      disabled={disabled}
-                      className={`relative clip-angle-sm px-4 py-4 font-display text-sm font-bold tracking-wider transition-all text-left ${
-                        disabled
-                          ? "opacity-40 cursor-not-allowed border border-border text-muted-foreground"
-                          : isSelected
-                            ? "bg-primary text-primary-foreground box-glow-primary"
-                            : "border border-border text-muted-foreground hover:text-foreground hover:border-primary/50"
-                      }`}
-                    >
-                      <span className="block">{mode.label}</span>
-                      <span className="block text-xs font-normal tracking-normal mt-0.5 opacity-70">
-                        {mode.description}
-                      </span>
-                      {count > 0 && (
-                        <span className="absolute top-2 right-3 flex items-center gap-1 text-xs font-normal opacity-60">
-                          <Users className="h-3 w-3" /> {count}
-                        </span>
-                      )}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* Role selectors - only for ranked modes */}
-            {isRanked && (
-              <motion.div
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: "auto" }}
-                exit={{ opacity: 0, height: 0 }}
-                className="w-full"
-              >
-                <h3 className="font-display text-xs tracking-[0.2em] text-muted-foreground text-center mb-3">PREFERÊNCIA DE ROTA</h3>
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-xs text-muted-foreground mb-1.5 font-display tracking-wider">SUA ROTA</label>
-                    <Select
-                      value={selectedMyRole ?? "any"}
-                      onValueChange={(v) => setSelectedMyRole(v === "any" ? null : v as Role)}
-                    >
-                      <SelectTrigger className="bg-background border-border">
-                        <SelectValue>
-                          {selectedMyRole ? (
-                            <span className="flex items-center gap-2">
-                              <RoleIcon role={selectedMyRole} size="sm" />
-                              {ROLE_LABELS[selectedMyRole]}
-                            </span>
-                          ) : "Qualquer"}
-                        </SelectValue>
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="any">Qualquer</SelectItem>
-                        {ROLES.map((role) => (
-                          <SelectItem key={role.value} value={role.value}>
-                            <span className="flex items-center gap-2">
-                              <RoleIcon role={role.value} size="sm" />
-                              {role.label}
-                            </span>
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div>
-                    <label className="block text-xs text-muted-foreground mb-1.5 font-display tracking-wider">ROTA DO DUO</label>
-                    <Select
-                      value={selectedDesiredRole ?? "any"}
-                      onValueChange={(v) => setSelectedDesiredRole(v === "any" ? null : v as Role)}
-                    >
-                      <SelectTrigger className="bg-background border-border">
-                        <SelectValue>
-                          {selectedDesiredRole ? (
-                            <span className="flex items-center gap-2">
-                              <RoleIcon role={selectedDesiredRole} size="sm" />
-                              {ROLE_LABELS[selectedDesiredRole]}
-                            </span>
-                          ) : "Qualquer"}
-                        </SelectValue>
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="any">Qualquer</SelectItem>
-                        {ROLES.map((role) => (
-                          <SelectItem key={role.value} value={role.value}>
-                            <span className="flex items-center gap-2">
-                              <RoleIcon role={role.value} size="sm" />
-                              {role.label}
-                            </span>
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-              </motion.div>
-            )}
-
-            <div className="relative">
-              <div className="h-24 w-24 rounded-full border-2 border-primary/30 gradient-card flex items-center justify-center">
-                <Crosshair className="h-10 w-10 text-primary" />
-              </div>
-            </div>
-            <button
-              onClick={handleStart}
-              disabled={isRanked && !myRank}
-              className="clip-angle bg-primary px-10 py-4 font-display text-lg font-bold tracking-widest text-primary-foreground transition-all hover:box-glow-primary disabled:opacity-40 disabled:cursor-not-allowed"
-            >
-              ENCONTRAR MATCH
-            </button>
-          </motion.div>
+          <QueueForm
+            myRank={myRank}
+            myRankSource={myRankSource}
+            queueCounts={queueCounts}
+            selectedMode={selectedMode}
+            selectedMyRole={selectedMyRole}
+            selectedDesiredRole={selectedDesiredRole}
+            onModeChange={setSelectedMode}
+            onMyRoleChange={setSelectedMyRole}
+            onDesiredRoleChange={setSelectedDesiredRole}
+            onStart={handleStart}
+          />
         )}
 
-        {(status === "idle" && joiningQueue) && (
+        {status === "idle" && joiningQueue && (
           <motion.div
             key="joining"
             initial={{ opacity: 0, scale: 0.9 }}
@@ -265,190 +121,29 @@ const MatchmakingQueue = () => {
         )}
 
         {status === "searching" && (
-          <motion.div
-            key="searching"
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.9 }}
-            className="flex flex-col items-center gap-8"
-          >
-            <div className="relative">
-              <motion.div
-                animate={{ rotate: 360 }}
-                transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
-                className="h-32 w-32 rounded-full border-2 border-primary border-t-transparent"
-              />
-              <div className="absolute inset-0 flex items-center justify-center">
-                <Clock className="h-8 w-8 text-primary animate-pulse-glow" />
-              </div>
-              <motion.div
-                animate={{ scale: [1, 1.8], opacity: [0.3, 0] }}
-                transition={{ duration: 2, repeat: Infinity }}
-                className="absolute inset-0 rounded-full border border-primary/30"
-              />
-            </div>
-            <div className="text-center">
-              <h2 className="font-display text-3xl font-bold tracking-wider text-primary text-glow-primary">
-                BUSCANDO
-              </h2>
-              <p className="mt-1 font-display text-xs tracking-widest text-muted-foreground uppercase">
-                {QUEUE_MODES.find((m) => m.value === selectedMode)?.label}
-              </p>
-              <p className="mt-2 font-display text-xl tracking-widest text-muted-foreground">
-                {formatTime(timer)}
-              </p>
-
-              {/* Search criteria feedback for ranked modes */}
-              {isRanked && (
-                <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  className="mt-4 flex flex-col items-center gap-1.5"
-                >
-                  <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                    <CheckCircle2 className="h-3.5 w-3.5 text-primary" />
-                    <span>Mesmo nível {myRank ? `(${TIER_LABELS[myRank.tier] ?? myRank.tier})` : ""}</span>
-                  </div>
-                  {searchPhase === "strict" ? (
-                    <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                      <CheckCircle2 className="h-3.5 w-3.5 text-primary" />
-                      {selectedMyRole || selectedDesiredRole ? (
-                        <span className="flex items-center gap-1">
-                          Rota desejada
-                          {selectedMyRole && <RoleIcon role={selectedMyRole} size="sm" showLabel className="text-primary" />}
-                        </span>
-                      ) : (
-                        <span>Qualquer rota</span>
-                      )}
-                    </div>
-                  ) : (
-                    <motion.div
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      className="flex items-center gap-1.5 text-xs text-secondary"
-                    >
-                      <AlertCircle className="h-3.5 w-3.5" />
-                      <span>Qualquer rota (busca expandida)</span>
-                    </motion.div>
-                  )}
-                </motion.div>
-              )}
-
-              {timer >= 60 && (
-                <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="mt-2 text-sm text-secondary">
-                  Demorando mais que o esperado...
-                </motion.p>
-              )}
-            </div>
-            <button
-              onClick={cancelQueue}
-              className="flex items-center gap-2 border border-destructive/50 bg-transparent px-8 py-3 font-display text-sm tracking-wider text-destructive transition-all hover:bg-destructive/10"
-            >
-              <X className="h-4 w-4" /> CANCELAR
-            </button>
-          </motion.div>
+          <SearchingView
+            timer={timer}
+            selectedMode={selectedMode}
+            selectedMyRole={selectedMyRole}
+            selectedDesiredRole={selectedDesiredRole}
+            myRank={myRank}
+            searchPhase={searchPhase}
+            onCancel={cancelQueue}
+          />
         )}
 
         {status === "found" && (
-          <motion.div
-            key="found"
-            initial={{ opacity: 0, scale: 0.8 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.9 }}
-            className="flex flex-col items-center gap-8"
-          >
-            <motion.div
-              initial={{ scale: 0 }}
-              animate={{ scale: 1 }}
-              transition={{ type: "spring", damping: 10 }}
-              className="h-32 w-32 rounded-full border-2 border-primary bg-primary/10 flex items-center justify-center box-glow-primary"
-            >
-              <Check className="h-12 w-12 text-primary" />
-            </motion.div>
-            <div className="text-center">
-              <h2 className="font-display text-3xl font-bold tracking-wider text-primary text-glow-primary">
-                MATCH ENCONTRADO
-              </h2>
-              <p className="mt-2 text-muted-foreground">Um jogador quer se conectar!</p>
-            </div>
-
-            <motion.div
-              initial={{ y: 20, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              transition={{ delay: 0.3 }}
-              className="clip-angle border border-primary/30 gradient-card p-6 w-80"
-            >
-              {!matchedPlayer ? (
-                <div className="flex items-center gap-4">
-                  <Skeleton className="h-14 w-14 rounded-full shrink-0" />
-                  <div className="flex-1 space-y-2">
-                    <Skeleton className="h-5 w-32" />
-                    <Skeleton className="h-4 w-24" />
-                  </div>
-                </div>
-              ) : (
-                <div className="flex items-center gap-4">
-                  <div className="h-14 w-14 rounded-full bg-muted flex items-center justify-center font-display text-xl font-bold text-primary">
-                    {matchedPlayer.profile.avatar_url ? (
-                      <img src={matchedPlayer.profile.avatar_url} alt="" className="h-full w-full rounded-full object-cover" />
-                    ) : (
-                      matchedPlayer.profile.username?.slice(0, 2).toUpperCase() ?? "??"
-                    )}
-                  </div>
-                  <div className="flex-1">
-                    <p className="font-display text-lg font-semibold tracking-wide text-foreground">
-                      {matchedPlayer.profile.username ?? "Jogador"}
-                    </p>
-                    {matchedPlayer.rank ? (
-                      <>
-                        <RankBadge tier={matchedPlayer.rank.tier} rank={matchedPlayer.rank.rank} winRate={matchedPlayer.rank.winRate} size="sm" />
-                        {matchedPlayer.rankSource === "manual" && (
-                          <p className="text-xs text-muted-foreground/50">Rank manual</p>
-                        )}
-                      </>
-                    ) : (
-                      <p className="text-xs text-muted-foreground">Sem rank</p>
-                    )}
-                    {matchedPlayer.myRole && (
-                      <p className="text-xs text-muted-foreground mt-0.5 flex items-center gap-1">
-                        Rota: <RoleIcon role={matchedPlayer.myRole} size="sm" showLabel className="text-foreground font-medium" />
-                      </p>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              {otherAccepted && (
-                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-                  className="mt-3 text-center text-sm text-primary font-display">
-                  ✓ O outro jogador aceitou!
-                </motion.div>
-              )}
-
-              <div className="mt-6 flex gap-3">
-                <button
-                  onClick={() => handleRespond(true)}
-                  disabled={!!respondingMatch}
-                  className="flex-1 clip-angle-sm bg-primary py-3 font-display text-sm font-bold tracking-wider text-primary-foreground hover:box-glow-primary transition-all disabled:opacity-60 flex items-center justify-center gap-2"
-                >
-                  {respondingMatch === "accept" ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-                  ACEITAR
-                </button>
-                <button
-                  onClick={() => handleRespond(false)}
-                  disabled={!!respondingMatch}
-                  className="flex-1 clip-angle-sm border border-muted-foreground/30 py-3 font-display text-sm tracking-wider text-muted-foreground hover:border-destructive hover:text-destructive transition-all disabled:opacity-60 flex items-center justify-center gap-2"
-                >
-                  {respondingMatch === "decline" ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-                  RECUSAR
-                </button>
-              </div>
-            </motion.div>
-          </motion.div>
+          <MatchFoundView
+            matchedPlayer={matchedPlayer}
+            otherAccepted={otherAccepted}
+            respondingMatch={respondingMatch}
+            onAccept={() => handleRespond(true)}
+            onDecline={() => handleRespond(false)}
+          />
         )}
       </AnimatePresence>
     </div>
   );
-};
+}
 
 export default MatchmakingQueue;

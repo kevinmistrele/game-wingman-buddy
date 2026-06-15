@@ -86,7 +86,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     if (!p) return;
 
-    const remoteId = (p as any).active_session_id as string | null;
+    const remoteId = p.active_session_id ?? null;
 
     // Already our session → fine
     if (remoteId && localId && remoteId === localId) {
@@ -100,7 +100,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setLocalSessionId(newId);
       await supabase
         .from("profiles")
-        .update({ active_session_id: newId, session_started_at: new Date().toISOString() } as any)
+        .update({ active_session_id: newId, session_started_at: new Date().toISOString() })
         .eq("user_id", userId);
       claimedFor.current = userId;
       return;
@@ -116,7 +116,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setLocalSessionId(newId);
     await supabase
       .from("profiles")
-      .update({ active_session_id: newId, session_started_at: new Date().toISOString() } as any)
+      .update({ active_session_id: newId, session_started_at: new Date().toISOString() })
       .eq("user_id", pendingTakeover.userId);
     claimedFor.current = pendingTakeover.userId;
     setPendingTakeover(null);
@@ -172,8 +172,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       .on(
         "postgres_changes",
         { event: "UPDATE", schema: "public", table: "profiles", filter: `user_id=eq.${user.id}` },
-        (payload: any) => {
-          const newId = payload.new?.active_session_id;
+        (payload) => {
+          const newId = (payload.new as { active_session_id?: string })?.active_session_id;
           const localId = getLocalSessionId();
           if (newId && localId && newId !== localId && claimedFor.current === user.id) {
             toast.error("Sua conta foi acessada em outro dispositivo. Você foi desconectado.");

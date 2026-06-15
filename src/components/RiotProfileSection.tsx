@@ -32,7 +32,7 @@ const RiotProfileSection = () => {
   }
 
   if (error) {
-    const status = (error as any)?.status;
+    const status = (error as Error & { status?: number })?.status;
     const isNotFound = status === 404;
     return (
       <div className="clip-angle border border-destructive/30 bg-destructive/5 p-6 text-center">

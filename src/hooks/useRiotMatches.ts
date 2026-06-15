@@ -1,69 +1,17 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import type { LolProfileResponse } from "@/types/riot";
 
-interface LolMatch {
-  matchId: string;
-  gameMode: string;
-  champion: string;
-  championId: number;
-  win: boolean;
-  kills: number;
-  deaths: number;
-  assists: number;
-  cs: number;
-  visionScore: number;
-  goldEarned: number;
-  damage: number;
-  duration: number;
-  date: string;
-  items: number[];
-}
-
-interface ChampionMastery {
-  championId: number;
-  championName: string;
-  championLevel: number;
-  championPoints: number;
-  lastPlayTime: string;
-}
-
-interface RankedEntry {
-  queueType: string;
-  tier: string;
-  rank: string;
-  lp: number;
-  wins: number;
-  losses: number;
-  winRate: number;
-}
-
-interface Summoner {
-  name: string;
-  level: number;
-  profileIconId: number;
-  profileIconUrl: string;
-  ranked?: RankedEntry[];
-}
-
-interface LolProfileResponse {
-  game: "lol";
-  puuid: string;
-  gameName: string;
-  tagLine: string;
-  summoner: Summoner | null;
-  topChampions: ChampionMastery[];
-  recentMatches: LolMatch[];
-}
-
-const fetchRiotProfile = async (
+async function fetchRiotProfile(
   game: "lol",
   riotId: string,
   region = "br1",
-  count = 10
-): Promise<LolProfileResponse> => {
+  count = 10,
+): Promise<LolProfileResponse> {
   const { data: { session } } = await supabase.auth.getSession();
   const projectUrl = import.meta.env.VITE_SUPABASE_URL;
   const apiKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+
   const url = `${projectUrl}/functions/v1/riot-matches?action=profile&game=${game}&riotId=${encodeURIComponent(riotId)}&region=${region}&count=${count}`;
   const response = await fetch(url, {
     headers: {
@@ -71,6 +19,7 @@ const fetchRiotProfile = async (
       apikey: apiKey,
     },
   });
+
   if (!response.ok) {
     const err = await response.json().catch(() => ({}));
     const msg = typeof err.error === "string" ? err.error : "Falha ao buscar perfil Riot";
@@ -78,33 +27,35 @@ const fetchRiotProfile = async (
     error.status = response.status;
     throw error;
   }
-  return response.json();
-};
 
-export const useRiotProfile = (
+  return response.json();
+}
+
+export function useRiotProfile(
   game: "lol",
   riotId: string | null | undefined,
   region = "br1",
-  count = 10
-) => {
+  count = 10,
+) {
   return useQuery<LolProfileResponse>({
     queryKey: ["riot-profile", game, riotId, region, count],
     queryFn: () => fetchRiotProfile(game, riotId!, region, count),
     enabled: !!riotId,
     staleTime: 5 * 60 * 1000,
-    retry: (failureCount, error: any) => {
-      if (error?.status === 404 || error?.status === 400) return false;
+    retry: (failureCount, error) => {
+      const status = (error as Error & { status?: number })?.status;
+      if (status === 404 || status === 400) return false;
       return failureCount < 1;
     },
   });
-};
+}
 
-export const useRiotMatches = (
+export function useRiotMatches(
   game: "lol",
   riotId: string | null | undefined,
   region = "br1",
-  count = 5
-) => {
+  count = 5,
+) {
   return useQuery({
     queryKey: ["riot-matches", game, riotId, region, count],
     queryFn: async () => {
@@ -127,9 +78,6 @@ export const useRiotMatches = (
     enabled: !!riotId,
     staleTime: 5 * 60 * 1000,
   });
-};
+}
 
-export type {
-  LolMatch, ChampionMastery, RankedEntry,
-  Summoner, LolProfileResponse,
-};
+export type { LolMatch, ChampionMastery, RankedEntry, Summoner, LolProfileResponse } from "@/types/riot";
