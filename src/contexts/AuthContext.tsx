@@ -94,8 +94,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       return;
     }
 
-    // No active session → claim immediately
-    if (!remoteId) {
+    // No remote session OR no local session (fresh browser) → claim immediately
+    if (!remoteId || !localId) {
       const newId = crypto.randomUUID();
       setLocalSessionId(newId);
       await supabase
@@ -106,7 +106,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       return;
     }
 
-    // Conflicting session → ask user
+    // Both exist but differ → genuinely conflicting session → ask user
     setPendingTakeover({ userId });
   };
 
