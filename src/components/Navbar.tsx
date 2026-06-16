@@ -4,12 +4,14 @@ import logo from "@/assets/game-matching-horizontal-1600x640-transparent.png";
 import { Users, MessageSquare, Crosshair, LogOut, User, Menu, X } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { AnimatePresence, motion } from "framer-motion";
+import ConfirmModal from "@/components/ConfirmModal";
 
 const Navbar = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { user, profile, signOut } = useAuth();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [showSignOutModal, setShowSignOutModal] = useState(false);
 
   const publicNavItems = [
     { label: "Início", path: "/", icon: Crosshair },
@@ -26,7 +28,8 @@ const Navbar = () => {
   const handleSignOut = async () => {
     await signOut();
     setMobileOpen(false);
-    navigate("/");
+    setShowSignOutModal(false);
+    navigate("/auth");
   };
 
   return (
@@ -73,7 +76,7 @@ const Navbar = () => {
                   <span>{profile?.username ?? user.email?.split("@")[0]}</span>
                 </Link>
                 <button
-                  onClick={handleSignOut}
+                  onClick={() => setShowSignOutModal(true)}
                   className="clip-angle-sm bg-muted px-4 py-2 font-display text-sm font-semibold tracking-wider text-foreground transition-all hover:bg-destructive hover:text-destructive-foreground"
                 >
                   SAIR
@@ -144,7 +147,7 @@ const Navbar = () => {
                     <span>{profile?.username ?? user.email?.split("@")[0]}</span>
                   </Link>
                   <button
-                    onClick={handleSignOut}
+                    onClick={() => setShowSignOutModal(true)}
                     className="flex items-center gap-3 px-4 py-3 rounded-lg font-display text-sm tracking-wide text-destructive hover:bg-destructive/10 transition-all"
                   >
                     <LogOut className="h-5 w-5" />
@@ -164,6 +167,17 @@ const Navbar = () => {
           </motion.div>
         )}
       </AnimatePresence>
+
+      <ConfirmModal
+        open={showSignOutModal}
+        onClose={() => setShowSignOutModal(false)}
+        onConfirm={handleSignOut}
+        title="Sair da conta"
+        description="Tem certeza que deseja sair? Você precisará fazer login novamente para acessar sua conta."
+        confirmLabel="Sair"
+        cancelLabel="Cancelar"
+        destructive
+      />
     </>
   );
 };

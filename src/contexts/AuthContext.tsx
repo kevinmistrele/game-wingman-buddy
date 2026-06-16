@@ -44,6 +44,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [needsOnboarding, setNeedsOnboarding] = useState(false);
   const [pendingTakeover, setPendingTakeover] = useState<{ userId: string } | null>(null);
   const claimedFor = useRef<string | null>(null);
+  const claiming = useRef(false);
 
   const fetchProfile = async (userId: string) => {
     const { data } = await supabase
@@ -79,37 +80,43 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   // Claim or detect conflicting session
   const claimSession = async (userId: string) => {
     if (claimedFor.current === userId) return;
-    const localId = getLocalSessionId();
-    const { data: p } = await supabase
-      .from("profiles")
-      .select("active_session_id")
-      .eq("user_id", userId)
-      .single();
-
-    if (!p) return;
-
-    const remoteId = p.active_session_id ?? null;
-
-    // Already our session → fine
-    if (remoteId && localId && remoteId === localId) {
-      claimedFor.current = userId;
-      return;
-    }
-
-    // No remote session OR no local session (fresh browser) → claim immediately
-    if (!remoteId || !localId) {
-      const newId = crypto.randomUUID();
-      setLocalSessionId(newId);
-      await supabase
+    if (claiming.current) return;
+    claiming.current = true;
+    try {
+      const localId = getLocalSessionId();
+      const { data: p } = await supabase
         .from("profiles")
-        .update({ active_session_id: newId, session_started_at: new Date().toISOString() })
-        .eq("user_id", userId);
-      claimedFor.current = userId;
-      return;
-    }
+        .select("active_session_id")
+        .eq("user_id", userId)
+        .single();
 
-    // Both exist but differ → genuinely conflicting session → ask user
-    setPendingTakeover({ userId });
+      if (!p) return;
+
+      const remoteId = p.active_session_id ?? null;
+
+      // Already our session → fine
+      if (remoteId && localId && remoteId === localId) {
+        claimedFor.current = userId;
+        return;
+      }
+
+      // No remote session OR no local session (fresh browser) → claim immediately
+      if (!remoteId || !localId) {
+        const newId = crypto.randomUUID();
+        setLocalSessionId(newId);
+        await supabase
+          .from("profiles")
+          .update({ active_session_id: newId, session_started_at: new Date().toISOString() })
+          .eq("user_id", userId);
+        claimedFor.current = userId;
+        return;
+      }
+
+      // Both exist but differ → genuinely conflicting session → ask user
+      setPendingTakeover({ userId });
+    } finally {
+      claiming.current = false;
+    }
   };
 
   const confirmTakeover = async () => {
@@ -193,8 +200,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, [user?.id]);
 
   const signOut = async () => {
+    if (user) {
+      await supabase
+        .from("profiles")
+        .update({ active_session_id: null })
+        .eq("user_id", user.id);
+    }
     clearLocalSessionId();
     claimedFor.current = null;
+    claiming.current = false;
     await supabase.auth.signOut();
     setProfile(null);
     setNeedsOnboarding(false);
