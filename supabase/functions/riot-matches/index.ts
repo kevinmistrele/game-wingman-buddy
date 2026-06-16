@@ -23,6 +23,105 @@ const QuerySchema = z.object({
   count: z.coerce.number().min(1).max(20).default(5),
 });
 
+interface RiotAccount {
+  puuid: string;
+}
+
+interface RiotSummoner {
+  id: string;
+  name?: string;
+  summonerLevel: number;
+  profileIconId: number;
+}
+
+interface RiotRankedEntry {
+  queueType: string;
+  tier: string;
+  rank: string;
+  leaguePoints: number;
+  wins: number;
+  losses: number;
+}
+
+interface DataDragonChampion {
+  id: string;
+  key: string;
+}
+
+interface ChampionMastery {
+  championId: number;
+  championLevel: number;
+  championPoints: number;
+  lastPlayTime: number;
+}
+
+interface LolParticipant {
+  puuid: string;
+  championName: string;
+  championId: number;
+  win: boolean;
+  kills: number;
+  deaths: number;
+  assists: number;
+  totalMinionsKilled: number;
+  neutralMinionsKilled: number;
+  visionScore: number;
+  goldEarned: number;
+  totalDamageDealtToChampions: number;
+  item0: number;
+  item1: number;
+  item2: number;
+  item3: number;
+  item4: number;
+  item5: number;
+  item6: number;
+}
+
+interface LolMatchResponse {
+  info: {
+    gameMode: string;
+    gameDuration: number;
+    gameCreation: number;
+    participants: LolParticipant[];
+  };
+}
+
+interface ValorantMatchListItem {
+  matchId: string;
+}
+
+interface ValorantMatchList {
+  history?: ValorantMatchListItem[];
+}
+
+interface ValorantPlayer {
+  puuid: string;
+  teamId: string;
+  characterId: string;
+  stats?: {
+    kills?: number;
+    deaths?: number;
+    assists?: number;
+    score?: number;
+  };
+}
+
+interface ValorantTeam {
+  teamId: string;
+  won?: boolean;
+  roundsWon?: number;
+  roundsPlayed?: number;
+}
+
+interface ValorantMatchResponse {
+  matchInfo?: {
+    mapId?: string;
+    gameStartMillis?: number;
+  };
+  players?: ValorantPlayer[];
+  teams?: ValorantTeam[];
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
@@ -57,7 +156,7 @@ Deno.serve(async (req) => {
       const body = await accountRes.text();
       return json({ error: `Account lookup failed [${accountRes.status}]: ${body}` }, accountRes.status);
     }
-    const account = await accountRes.json();
+    const account: RiotAccount = await accountRes.json();
     const puuid = account.puuid;
 
     // ===== PROFILE ACTION =====
@@ -68,9 +167,23 @@ Deno.serve(async (req) => {
           `https://${region}.api.riotgames.com/lol/summoner/v4/summoners/by-puuid/${puuid}`,
           { headers }
         );
-        let summoner = null;
+        let summoner: {
+          name?: string;
+          level: number;
+          profileIconId: number;
+          profileIconUrl: string;
+          ranked?: Array<{
+            queueType: string;
+            tier: string;
+            rank: string;
+            lp: number;
+            wins: number;
+            losses: number;
+            winRate: number;
+          }>;
+        } | null = null;
         if (summonerRes.ok) {
-          const s = await summonerRes.json();
+          const s: RiotSummoner = await summonerRes.json();
           summoner = {
             name: s.name,
             level: s.summonerLevel,
@@ -84,8 +197,8 @@ Deno.serve(async (req) => {
             { headers }
           );
           if (rankedRes.ok) {
-            const ranked = await rankedRes.json();
-            summoner.ranked = ranked.map((r: any) => ({
+            const ranked: RiotRankedEntry[] = await rankedRes.json();
+            summoner.ranked = ranked.map((r) => ({
               queueType: r.queueType,
               tier: r.tier,
               rank: r.rank,
@@ -98,14 +211,14 @@ Deno.serve(async (req) => {
         }
 
         // Fetch Data Dragon champion map for id->name resolution
-        let championMap: Record<number, string> = {};
+        const championMap: Record<number, string> = {};
         try {
           const versionRes = await fetch("https://ddragon.leagueoflegends.com/api/versions.json");
           const versions: string[] = await versionRes.json();
           const latestVersion = versions[0];
           const champListRes = await fetch(`https://ddragon.leagueoflegends.com/cdn/${latestVersion}/data/en_US/champion.json`);
-          const champListData = await champListRes.json();
-          for (const champ of Object.values(champListData.data) as any[]) {
+          const champListData: { data: Record<string, DataDragonChampion> } = await champListRes.json();
+          for (const champ of Object.values(champListData.data)) {
             championMap[parseInt(champ.key)] = champ.id;
           }
         } catch (e) {
@@ -117,10 +230,16 @@ Deno.serve(async (req) => {
           `https://${region}.api.riotgames.com/lol/champion-mastery/v4/champion-masteries/by-puuid/${puuid}/top?count=5`,
           { headers }
         );
-        let topChampions: any[] = [];
+        const topChampions: Array<{
+          championId: number;
+          championName: string;
+          championLevel: number;
+          championPoints: number;
+          lastPlayTime: string;
+        }> = [];
         if (masteryRes.ok) {
-          const masteries = await masteryRes.json();
-          topChampions = masteries.map((m: any) => {
+          const masteries: ChampionMastery[] = await masteryRes.json();
+          topChampions.push(...masteries.map((m) => {
             const champKey = championMap[m.championId] ?? "Unknown";
             return {
               championId: m.championId,
@@ -129,7 +248,7 @@ Deno.serve(async (req) => {
               championPoints: m.championPoints,
               lastPlayTime: new Date(m.lastPlayTime).toISOString(),
             };
-          });
+          }));
         }
 
         // Recent matches (last 5)
@@ -137,7 +256,23 @@ Deno.serve(async (req) => {
           `https://${continent}.api.riotgames.com/lol/match/v5/matches/by-puuid/${puuid}/ids?count=${count}`,
           { headers }
         );
-        let recentMatches: any[] = [];
+        const recentMatches: Array<{
+          matchId: string;
+          gameMode: string;
+          champion: string;
+          championId: number;
+          win: boolean;
+          kills: number;
+          deaths: number;
+          assists: number;
+          cs: number;
+          visionScore: number;
+          goldEarned: number;
+          damage: number;
+          duration: number;
+          date: string;
+          items: number[];
+        }> = [];
         if (matchIdsRes.ok) {
           const matchIds: string[] = await matchIdsRes.json();
           for (const matchId of matchIds) {
@@ -146,8 +281,8 @@ Deno.serve(async (req) => {
               { headers }
             );
             if (matchRes.ok) {
-              const match = await matchRes.json();
-              const p = match.info.participants.find((p: any) => p.puuid === puuid);
+              const match: LolMatchResponse = await matchRes.json();
+              const p = match.info.participants.find((participant) => participant.puuid === puuid);
               if (p) {
                 recentMatches.push({
                   matchId,
@@ -180,12 +315,24 @@ Deno.serve(async (req) => {
           `https://${continent}.api.riotgames.com/val/match/v1/matchlists/by-puuid/${puuid}`,
           { headers }
         );
-        let recentMatches: any[] = [];
+        const recentMatches: Array<{
+          matchId: string;
+          map?: string;
+          agent: string;
+          win: boolean;
+          kills: number;
+          deaths: number;
+          assists: number;
+          score: number;
+          roundsWon: number;
+          roundsLost: number;
+          date: string;
+        }> = [];
         const agentStats: Record<string, { wins: number; losses: number; kills: number; deaths: number; assists: number; games: number }> = {};
 
         if (matchIdsRes.ok) {
-          const matchList = await matchIdsRes.json();
-          const matchIds = (matchList.history || []).slice(0, count).map((m: any) => m.matchId);
+          const matchList: ValorantMatchList = await matchIdsRes.json();
+          const matchIds = (matchList.history ?? []).slice(0, count).map((match) => match.matchId);
 
           for (const matchId of matchIds) {
             const matchRes = await fetch(
@@ -193,10 +340,10 @@ Deno.serve(async (req) => {
               { headers }
             );
             if (matchRes.ok) {
-              const match = await matchRes.json();
-              const player = match.players?.find((p: any) => p.puuid === puuid);
+              const match: ValorantMatchResponse = await matchRes.json();
+              const player = match.players?.find((matchPlayer) => matchPlayer.puuid === puuid);
               if (player) {
-                const team = match.teams?.find((t: any) => t.teamId === player.teamId);
+                const team = match.teams?.find((matchTeam) => matchTeam.teamId === player.teamId);
                 const won = team?.won ?? false;
                 const agentId = player.characterId;
 
@@ -251,8 +398,8 @@ Deno.serve(async (req) => {
         for (const matchId of matchIds) {
           const matchRes = await fetch(`https://${continent}.api.riotgames.com/lol/match/v5/matches/${matchId}`, { headers });
           if (matchRes.ok) {
-            const match = await matchRes.json();
-            const p = match.info.participants.find((p: any) => p.puuid === puuid);
+            const match: LolMatchResponse = await matchRes.json();
+            const p = match.info.participants.find((participant) => participant.puuid === puuid);
             if (p) {
               matches.push({
                 matchId, gameMode: match.info.gameMode, champion: p.championName, win: p.win,
@@ -269,17 +416,17 @@ Deno.serve(async (req) => {
       if (game === "valorant") {
         const matchIdsRes = await fetch(`https://${continent}.api.riotgames.com/val/match/v1/matchlists/by-puuid/${puuid}`, { headers });
         if (!matchIdsRes.ok) return json({ error: `Valorant match history failed [${matchIdsRes.status}]` }, matchIdsRes.status);
-        const matchList = await matchIdsRes.json();
-        const matchIds = (matchList.history || []).slice(0, count).map((m: any) => m.matchId);
+        const matchList: ValorantMatchList = await matchIdsRes.json();
+        const matchIds = (matchList.history ?? []).slice(0, count).map((match) => match.matchId);
 
         const matches = [];
         for (const matchId of matchIds) {
           const matchRes = await fetch(`https://${continent}.api.riotgames.com/val/match/v1/matches/${matchId}`, { headers });
           if (matchRes.ok) {
-            const match = await matchRes.json();
-            const player = match.players?.find((p: any) => p.puuid === puuid);
+            const match: ValorantMatchResponse = await matchRes.json();
+            const player = match.players?.find((matchPlayer) => matchPlayer.puuid === puuid);
             if (player) {
-              const team = match.teams?.find((t: any) => t.teamId === player.teamId);
+              const team = match.teams?.find((matchTeam) => matchTeam.teamId === player.teamId);
               matches.push({
                 matchId, map: match.matchInfo?.mapId, agent: player.characterId, win: team?.won ?? false,
                 kills: player.stats?.kills ?? 0, deaths: player.stats?.deaths ?? 0, assists: player.stats?.assists ?? 0,
