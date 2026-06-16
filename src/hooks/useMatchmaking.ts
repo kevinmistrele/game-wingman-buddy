@@ -9,6 +9,7 @@ import { findOrCreateConversation, fetchExcludedUserIds } from "@/lib/conversati
 import type { Tables } from "@/integrations/supabase/types";
 import type { QueueMode, Role } from "@/lib/eloUtils";
 import type { MatchedPlayerInfo, QueueStatus, SearchPhase } from "@/types/matchmaking";
+import type { RankSource } from "@/types/riot";
 
 type Match = Tables<"matches">;
 
@@ -47,7 +48,7 @@ export function useMatchmaking() {
     : null;
 
   const myRank = riotRank ?? manualRank;
-  const myRankSource = riotRank ? "riot" : manualRank ? "manual" : null;
+  const myRankSource: RankSource | null = riotRank ? "riot" : manualRank ? "manual" : null;
 
   // ─── Search phase timer ──────────────────────────────────────────────────────
   useEffect(() => {
@@ -56,11 +57,6 @@ export function useMatchmaking() {
     const timer = setTimeout(() => setSearchPhase("expanded"), 30_000);
     return () => clearTimeout(timer);
   }, [status]);
-
-  useEffect(() => {
-    if (searchPhase !== "expanded" || status !== "searching" || !queueEntryId || !user) return;
-    attemptMatch();
-  }, [searchPhase]);
 
   // ─── Auto-cancel on unload/unmount ───────────────────────────────────────────
   useEffect(() => {
@@ -235,6 +231,11 @@ export function useMatchmaking() {
       }
     }
   }, [user, myRank, searchPhase]);
+
+  useEffect(() => {
+    if (searchPhase !== "expanded" || status !== "searching" || !queueEntryId || !user) return;
+    attemptMatch();
+  }, [attemptMatch, queueEntryId, searchPhase, status, user]);
 
   const joinQueue = useCallback(async (mode: QueueMode, myRole?: Role | null, desiredDuoRole?: Role | null) => {
     if (!user) return;

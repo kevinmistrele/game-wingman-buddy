@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { playNewMessageSound } from "@/lib/soundUtils";
+import { getMyConversations } from "@/lib/supabaseRpc";
 import type { ConversationWithProfile, Message } from "@/types/chat";
 import type { ConversationRow } from "@/types/supabase-rpc";
 
@@ -54,11 +55,11 @@ export function useConversations() {
   const fetchConversations = useCallback(async () => {
     if (!user) return;
 
-    const { data, error } = await supabase.rpc("get_my_conversations");
+    const { data, error } = await getMyConversations();
 
     if (error || !data) { setLoading(false); return; }
 
-    setConversations((data as ConversationRow[]).map(rowToConversationWithProfile));
+    setConversations(data.map(rowToConversationWithProfile));
     setLoading(false);
   }, [user]);
 
