@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { Gamepad2, Mail, Lock, User, Chrome, Crosshair, Loader2 } from "lucide-react";
+import { Gamepad2, Mail, Lock, User, Chrome, Crosshair, Loader2, Eye, EyeOff } from "lucide-react";
 import logo from "@/assets/game-matching-vertical-original-transparent.png";
 import { validateRiotId as checkRiotId } from "@/lib/validators";
 import { parseApiError } from "@/lib/errors";
@@ -17,6 +17,7 @@ function Auth() {
   const [loading, setLoading] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [username, setUsername] = useState("");
   const [riotId, setRiotId] = useState("");
   const [riotIdError, setRiotIdError] = useState("");
@@ -254,14 +255,23 @@ function Auth() {
                   <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground/60" />
                   <Input
                     id="password"
-                    type="password"
+                    type={showPassword ? "text" : "password"}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="••••••••"
-                    className="h-12 pl-11 bg-muted/50 border-border/50 text-base focus:border-primary/50 focus:ring-primary/20 transition-all"
+                    className="h-12 pl-11 pr-11 bg-muted/50 border-border/50 text-base focus:border-primary/50 focus:ring-primary/20 transition-all"
                     required
                     minLength={6}
                   />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword((current) => !current)}
+                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-muted-foreground/60 transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                    aria-label={showPassword ? "Esconder senha" : "Mostrar senha"}
+                    aria-pressed={showPassword}
+                  >
+                    {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                  </button>
                 </div>
               </div>
 
