@@ -1,36 +1,35 @@
 import { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import logo from "@/assets/game-matching-horizontal-1600x640-transparent.png";
-import { Users, MessageSquare, Crosshair, LogOut, User, Menu, X } from "lucide-react";
-import { useAuth } from "@/contexts/AuthContext";
 import { AnimatePresence, motion } from "framer-motion";
+import { Crosshair, LogOut, Menu, MessageSquare, User, Users, X } from "lucide-react";
 import ConfirmModal from "@/components/ConfirmModal";
+import { useAuth } from "@/contexts/AuthContext";
+import logo from "@/assets/game-matching-horizontal-1600x640-transparent.png";
 
-const Navbar = () => {
+const PUBLIC_NAV_ITEMS = [
+  { label: "Início", path: "/", icon: Crosshair },
+];
+
+const AUTH_NAV_ITEMS = [
+  { label: "Início", path: "/", icon: Crosshair },
+  { label: "Matchmaking", path: "/matchmaking", icon: Users },
+  { label: "Chat", path: "/chat", icon: MessageSquare },
+];
+
+function Navbar() {
   const location = useLocation();
   const navigate = useNavigate();
   const { user, profile, signOut } = useAuth();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [showSignOutModal, setShowSignOutModal] = useState(false);
+  const navItems = user ? AUTH_NAV_ITEMS : PUBLIC_NAV_ITEMS;
 
-  const publicNavItems = [
-    { label: "Início", path: "/", icon: Crosshair },
-  ];
-
-  const authNavItems = [
-    { label: "Início", path: "/", icon: Crosshair },
-    { label: "Matchmaking", path: "/matchmaking", icon: Users },
-    { label: "Chat", path: "/chat", icon: MessageSquare },
-  ];
-
-  const navItems = user ? authNavItems : publicNavItems;
-
-  const handleSignOut = async () => {
+  async function handleSignOut() {
     await signOut();
     setMobileOpen(false);
     setShowSignOutModal(false);
     navigate("/auth");
-  };
+  }
 
   return (
     <>
@@ -40,7 +39,6 @@ const Navbar = () => {
             <img src={logo} alt="Game Matching" className="h-10" />
           </Link>
 
-          {/* Desktop nav */}
           <div className="hidden md:flex items-center gap-1 absolute left-1/2 -translate-x-1/2">
             {navItems.map((item) => {
               const isActive = location.pathname === item.path;
@@ -92,17 +90,16 @@ const Navbar = () => {
             )}
           </div>
 
-          {/* Mobile hamburger */}
           <button
             className="md:hidden p-2 text-muted-foreground hover:text-foreground transition-colors"
             onClick={() => setMobileOpen(!mobileOpen)}
+            aria-label={mobileOpen ? "Fechar menu" : "Abrir menu"}
           >
             {mobileOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
           </button>
         </div>
       </nav>
 
-      {/* Mobile menu overlay */}
       <AnimatePresence>
         {mobileOpen && (
           <motion.div
@@ -180,6 +177,6 @@ const Navbar = () => {
       />
     </>
   );
-};
+}
 
 export default Navbar;

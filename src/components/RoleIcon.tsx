@@ -30,7 +30,7 @@ const sizeClasses = {
   lg: "h-5 w-5",
 };
 
-const RoleIcon = ({ role, size = "md", showLabel = false, className }: RoleIconProps) => {
+function RoleIcon({ role, size = "md", showLabel = false, className }: RoleIconProps) {
   const Icon = ROLE_ICON_MAP[role];
   if (!Icon) return null;
 
@@ -40,6 +40,6 @@ const RoleIcon = ({ role, size = "md", showLabel = false, className }: RoleIconP
       {showLabel && <span>{ROLE_LABELS[role] ?? role}</span>}
     </span>
   );
-};
+}
 
 export default RoleIcon;

@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { Mail, ArrowLeft, RefreshCw, ExternalLink, Crosshair, MessageCircle, Trophy } from "lucide-react";
 import logo from "@/assets/game-matching-vertical-original-transparent.png";
+import { parseApiError } from "@/lib/errors";
 
 const COOLDOWN_SECONDS = 30;
 
@@ -27,7 +28,7 @@ const highlights = [
   },
 ];
 
-const VerifyEmail = () => {
+function VerifyEmail() {
   const location = useLocation();
   const navigate = useNavigate();
   const email = (location.state as { email?: string })?.email;
@@ -40,7 +41,7 @@ const VerifyEmail = () => {
     return () => clearInterval(timer);
   }, [cooldown]);
 
-  const handleResend = async () => {
+  async function handleResend() {
     if (cooldown > 0 || !email) return;
     setResending(true);
     try {
@@ -48,12 +49,12 @@ const VerifyEmail = () => {
       if (error) throw error;
       toast.success("Email reenviado com sucesso!");
       setCooldown(COOLDOWN_SECONDS);
-    } catch (err: any) {
-      toast.error(err.message || "Falha ao reenviar email.");
+    } catch (error) {
+      toast.error(parseApiError(error));
     } finally {
       setResending(false);
     }
-  };
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background relative overflow-hidden px-4">
@@ -202,6 +203,6 @@ const VerifyEmail = () => {
       </motion.div>
     </div>
   );
-};
+}
 
 export default VerifyEmail;
