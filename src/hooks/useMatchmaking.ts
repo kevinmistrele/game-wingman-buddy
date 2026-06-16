@@ -30,9 +30,13 @@ export function useMatchmaking() {
   const selectedModeRef = useRef<QueueMode>("normal");
   const selectedRolesRef = useRef<{ myRole: Role | null; desiredDuoRole: Role | null }>({ myRole: null, desiredDuoRole: null });
   const queueEntryIdRef = useRef<string | null>(null);
+  const rejectedUserIdsRef = useRef<Set<string>>(new Set());
+  const handledDeclinedMatchIdsRef = useRef<Set<string>>(new Set());
+  const resumeQueueAfterDeclinedMatchRef = useRef<(match: Match) => Promise<void>>(async () => undefined);
 
   // Keep ref in sync (used in beforeunload)
   useEffect(() => { queueEntryIdRef.current = queueEntryId; }, [queueEntryId]);
+  resumeQueueAfterDeclinedMatchRef.current = resumeQueueAfterDeclinedMatch;
 
   // ─── Resolve current user rank ──────────────────────────────────────────────
   const { data: riotData } = useRiotProfile(GAME, profile?.riot_id, "br1", 1);
@@ -56,11 +60,6 @@ export function useMatchmaking() {
     const timer = setTimeout(() => setSearchPhase("expanded"), 30_000);
     return () => clearTimeout(timer);
   }, [status]);
-
-  useEffect(() => {
-    if (searchPhase !== "expanded" || status !== "searching" || !queueEntryId || !user) return;
-    attemptMatch();
-  }, [searchPhase]);
 
   // ─── Auto-cancel on unload/unmount ───────────────────────────────────────────
   useEffect(() => {
@@ -138,7 +137,7 @@ export function useMatchmaking() {
           if (convoId) setAcceptedConvoId(convoId);
           setStatus("idle");
         } else if (match.status === "declined" || match.status === "expired") {
-          resetMatchState();
+          await resumeQueueAfterDeclinedMatchRef.current(match);
         }
       })
       .subscribe();
@@ -166,7 +165,7 @@ export function useMatchmaking() {
         if (convoId) { setAcceptedConvoId(convoId); setStatus("idle"); }
       }
 
-      if (fresh.status === "declined" || fresh.status === "expired") resetMatchState();
+      if (fresh.status === "declined" || fresh.status === "expired") await resumeQueueAfterDeclinedMatchRef.current(fresh as Match);
     }, 2_000);
 
     return () => clearInterval(interval);
@@ -179,11 +178,47 @@ export function useMatchmaking() {
   }, [currentMatch, user, status]);
 
   // ─── Helpers ─────────────────────────────────────────────────────────────────
-  function resetMatchState() {
-    setStatus("idle");
+  function clearMatchState() {
     setCurrentMatch(null);
     setMatchedPlayer(null);
     setOtherAccepted(false);
+  }
+
+  function resetMatchState() {
+    setStatus("idle");
+    clearMatchState();
+  }
+
+  async function resumeQueueAfterDeclinedMatch(match: Match) {
+    if (!user) {
+      resetMatchState();
+      return;
+    }
+
+    const entryId = queueEntryIdRef.current;
+    const otherUserId = match.user1_id === user.id ? match.user2_id : match.user1_id;
+    rejectedUserIdsRef.current.add(otherUserId);
+    clearMatchState();
+
+    if (!entryId || handledDeclinedMatchIdsRef.current.has(match.id)) {
+      if (!entryId) setStatus("idle");
+      return;
+    }
+
+    handledDeclinedMatchIdsRef.current.add(match.id);
+
+    const { error } = await supabase
+      .from("matchmaking_queue")
+      .update({ status: "waiting", created_at: new Date().toISOString() })
+      .eq("id", entryId);
+
+    if (error) {
+      setStatus("idle");
+      return;
+    }
+
+    setStatus("searching");
+    setTimeout(() => attemptMatch(), 100);
   }
 
   // ─── Actions ─────────────────────────────────────────────────────────────────
@@ -195,6 +230,7 @@ export function useMatchmaking() {
     const { myRole, desiredDuoRole } = selectedRolesRef.current;
 
     const excludedIds = await fetchExcludedUserIds(user.id);
+    const rejectedIds = rejectedUserIdsRef.current;
     const cutoff = new Date(Date.now() - QUEUE_ACTIVE_WINDOW_MS).toISOString();
 
     const { data: waitingPlayers } = await supabase
@@ -207,7 +243,8 @@ export function useMatchmaking() {
 
     const candidates = waitingPlayers
       .filter(p => (p.mode ?? "normal") === mode)
-      .filter(p => !excludedIds.has(p.user_id));
+      .filter(p => !excludedIds.has(p.user_id))
+      .filter(p => !rejectedIds.has(p.user_id));
 
     for (const opponent of candidates) {
       const { data: freshEntry } = await supabase
@@ -236,6 +273,11 @@ export function useMatchmaking() {
     }
   }, [user, myRank, searchPhase]);
 
+  useEffect(() => {
+    if (searchPhase !== "expanded" || status !== "searching" || !queueEntryId || !user) return;
+    attemptMatch();
+  }, [attemptMatch, queueEntryId, searchPhase, status, user]);
+
   const joinQueue = useCallback(async (mode: QueueMode, myRole?: Role | null, desiredDuoRole?: Role | null) => {
     if (!user) return;
 
@@ -251,6 +293,8 @@ export function useMatchmaking() {
 
     selectedModeRef.current = mode;
     selectedRolesRef.current = { myRole: roleToSave, desiredDuoRole: desiredToSave };
+    rejectedUserIdsRef.current = new Set();
+    handledDeclinedMatchIdsRef.current = new Set();
 
     const { data, error } = await supabase
       .from("matchmaking_queue")
@@ -265,6 +309,8 @@ export function useMatchmaking() {
 
   const cancelQueue = useCallback(async () => {
     if (queueEntryId) await supabase.from("matchmaking_queue").update({ status: "cancelled" }).eq("id", queueEntryId);
+    rejectedUserIdsRef.current = new Set();
+    handledDeclinedMatchIdsRef.current = new Set();
     setStatus("idle");
     setQueueEntryId(null);
   }, [queueEntryId]);
@@ -277,7 +323,7 @@ export function useMatchmaking() {
 
     if (!accepted) {
       await supabase.from("matches").update({ [statusField]: "declined", status: "declined" }).eq("id", currentMatch.id);
-      resetMatchState();
+      await resumeQueueAfterDeclinedMatchRef.current(currentMatch);
       return null;
     }
 

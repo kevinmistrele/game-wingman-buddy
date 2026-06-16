@@ -9,6 +9,8 @@ import logo from "@/assets/game-matching-vertical-original-transparent.png";
 
 const COOLDOWN_SECONDS = 30;
 
+const getErrorMessage = (error: unknown) => error instanceof Error ? error.message : "Falha ao reenviar email.";
+
 const highlights = [
   {
     icon: Crosshair,
@@ -48,8 +50,8 @@ const VerifyEmail = () => {
       if (error) throw error;
       toast.success("Email reenviado com sucesso!");
       setCooldown(COOLDOWN_SECONDS);
-    } catch (err: any) {
-      toast.error(err.message || "Falha ao reenviar email.");
+    } catch (err: unknown) {
+      toast.error(getErrorMessage(err));
     } finally {
       setResending(false);
     }

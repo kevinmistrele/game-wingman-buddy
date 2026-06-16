@@ -23,6 +23,109 @@ const QuerySchema = z.object({
   count: z.coerce.number().min(1).max(20).default(5),
 });
 
+type RiotAccount = {
+  puuid: string;
+};
+
+type RiotSummoner = {
+  id: string;
+  name: string;
+  summonerLevel: number;
+  profileIconId: number;
+};
+
+type RiotRankedEntry = {
+  queueType: string;
+  tier: string;
+  rank: string;
+  leaguePoints: number;
+  wins: number;
+  losses: number;
+};
+
+type DataDragonChampion = {
+  key: string;
+  id: string;
+};
+
+type DataDragonChampionList = {
+  data: Record<string, DataDragonChampion>;
+};
+
+type ChampionMastery = {
+  championId: number;
+  championLevel: number;
+  championPoints: number;
+  lastPlayTime: number;
+};
+
+type LolParticipant = {
+  puuid: string;
+  championName: string;
+  championId: number;
+  win: boolean;
+  kills: number;
+  deaths: number;
+  assists: number;
+  totalMinionsKilled: number;
+  neutralMinionsKilled: number;
+  visionScore: number;
+  goldEarned: number;
+  totalDamageDealtToChampions: number;
+  item0: number;
+  item1: number;
+  item2: number;
+  item3: number;
+  item4: number;
+  item5: number;
+  item6: number;
+};
+
+type LolMatch = {
+  info: {
+    gameMode: string;
+    gameDuration: number;
+    gameCreation: number;
+    participants: LolParticipant[];
+  };
+};
+
+type ValorantMatchHistoryItem = {
+  matchId: string;
+};
+
+type ValorantMatchList = {
+  history?: ValorantMatchHistoryItem[];
+};
+
+type ValorantPlayer = {
+  puuid: string;
+  teamId: string;
+  characterId: string;
+  stats?: {
+    kills?: number;
+    deaths?: number;
+    assists?: number;
+    score?: number;
+  };
+};
+
+type ValorantTeam = {
+  teamId: string;
+  won?: boolean;
+  roundsWon?: number;
+  roundsPlayed?: number;
+};
+
+type ValorantMatch = {
+  matchInfo?: {
+    mapId?: string;
+    gameStartMillis?: number;
+  };
+  players?: ValorantPlayer[];
+  teams?: ValorantTeam[];
+};
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
@@ -57,7 +160,7 @@ Deno.serve(async (req) => {
       const body = await accountRes.text();
       return json({ error: `Account lookup failed [${accountRes.status}]: ${body}` }, accountRes.status);
     }
-    const account = await accountRes.json();
+    const account = await accountRes.json() as RiotAccount;
     const puuid = account.puuid;
 
     // ===== PROFILE ACTION =====
@@ -70,7 +173,7 @@ Deno.serve(async (req) => {
         );
         let summoner = null;
         if (summonerRes.ok) {
-          const s = await summonerRes.json();
+          const s = await summonerRes.json() as RiotSummoner;
           summoner = {
             name: s.name,
             level: s.summonerLevel,
@@ -84,8 +187,8 @@ Deno.serve(async (req) => {
             { headers }
           );
           if (rankedRes.ok) {
-            const ranked = await rankedRes.json();
-            summoner.ranked = ranked.map((r: any) => ({
+            const ranked = await rankedRes.json() as RiotRankedEntry[];
+            summoner.ranked = ranked.map((r) => ({
               queueType: r.queueType,
               tier: r.tier,
               rank: r.rank,
@@ -98,14 +201,14 @@ Deno.serve(async (req) => {
         }
 
         // Fetch Data Dragon champion map for id->name resolution
-        let championMap: Record<number, string> = {};
+        const championMap: Record<number, string> = {};
         try {
           const versionRes = await fetch("https://ddragon.leagueoflegends.com/api/versions.json");
           const versions: string[] = await versionRes.json();
           const latestVersion = versions[0];
           const champListRes = await fetch(`https://ddragon.leagueoflegends.com/cdn/${latestVersion}/data/en_US/champion.json`);
-          const champListData = await champListRes.json();
-          for (const champ of Object.values(champListData.data) as any[]) {
+          const champListData = await champListRes.json() as DataDragonChampionList;
+          for (const champ of Object.values(champListData.data)) {
             championMap[parseInt(champ.key)] = champ.id;
           }
         } catch (e) {
@@ -117,10 +220,16 @@ Deno.serve(async (req) => {
           `https://${region}.api.riotgames.com/lol/champion-mastery/v4/champion-masteries/by-puuid/${puuid}/top?count=5`,
           { headers }
         );
-        let topChampions: any[] = [];
+        let topChampions: {
+          championId: number;
+          championName: string;
+          championLevel: number;
+          championPoints: number;
+          lastPlayTime: string;
+        }[] = [];
         if (masteryRes.ok) {
-          const masteries = await masteryRes.json();
-          topChampions = masteries.map((m: any) => {
+          const masteries = await masteryRes.json() as ChampionMastery[];
+          topChampions = masteries.map((m) => {
             const champKey = championMap[m.championId] ?? "Unknown";
             return {
               championId: m.championId,
@@ -137,7 +246,23 @@ Deno.serve(async (req) => {
           `https://${continent}.api.riotgames.com/lol/match/v5/matches/by-puuid/${puuid}/ids?count=${count}`,
           { headers }
         );
-        let recentMatches: any[] = [];
+        const recentMatches: {
+          matchId: string;
+          gameMode: string;
+          champion: string;
+          championId: number;
+          win: boolean;
+          kills: number;
+          deaths: number;
+          assists: number;
+          cs: number;
+          visionScore: number;
+          goldEarned: number;
+          damage: number;
+          duration: number;
+          date: string;
+          items: number[];
+        }[] = [];
         if (matchIdsRes.ok) {
           const matchIds: string[] = await matchIdsRes.json();
           for (const matchId of matchIds) {
@@ -146,8 +271,8 @@ Deno.serve(async (req) => {
               { headers }
             );
             if (matchRes.ok) {
-              const match = await matchRes.json();
-              const p = match.info.participants.find((p: any) => p.puuid === puuid);
+              const match = await matchRes.json() as LolMatch;
+              const p = match.info.participants.find((participant) => participant.puuid === puuid);
               if (p) {
                 recentMatches.push({
                   matchId,
@@ -180,12 +305,24 @@ Deno.serve(async (req) => {
           `https://${continent}.api.riotgames.com/val/match/v1/matchlists/by-puuid/${puuid}`,
           { headers }
         );
-        let recentMatches: any[] = [];
+        const recentMatches: {
+          matchId: string;
+          map: string | undefined;
+          agent: string;
+          win: boolean;
+          kills: number;
+          deaths: number;
+          assists: number;
+          score: number;
+          roundsWon: number;
+          roundsLost: number;
+          date: string;
+        }[] = [];
         const agentStats: Record<string, { wins: number; losses: number; kills: number; deaths: number; assists: number; games: number }> = {};
 
         if (matchIdsRes.ok) {
-          const matchList = await matchIdsRes.json();
-          const matchIds = (matchList.history || []).slice(0, count).map((m: any) => m.matchId);
+          const matchList = await matchIdsRes.json() as ValorantMatchList;
+          const matchIds = (matchList.history || []).slice(0, count).map((m) => m.matchId);
 
           for (const matchId of matchIds) {
             const matchRes = await fetch(
@@ -193,10 +330,10 @@ Deno.serve(async (req) => {
               { headers }
             );
             if (matchRes.ok) {
-              const match = await matchRes.json();
-              const player = match.players?.find((p: any) => p.puuid === puuid);
+              const match = await matchRes.json() as ValorantMatch;
+              const player = match.players?.find((participant) => participant.puuid === puuid);
               if (player) {
-                const team = match.teams?.find((t: any) => t.teamId === player.teamId);
+                const team = match.teams?.find((item) => item.teamId === player.teamId);
                 const won = team?.won ?? false;
                 const agentId = player.characterId;
 
@@ -251,8 +388,8 @@ Deno.serve(async (req) => {
         for (const matchId of matchIds) {
           const matchRes = await fetch(`https://${continent}.api.riotgames.com/lol/match/v5/matches/${matchId}`, { headers });
           if (matchRes.ok) {
-            const match = await matchRes.json();
-            const p = match.info.participants.find((p: any) => p.puuid === puuid);
+            const match = await matchRes.json() as LolMatch;
+            const p = match.info.participants.find((participant) => participant.puuid === puuid);
             if (p) {
               matches.push({
                 matchId, gameMode: match.info.gameMode, champion: p.championName, win: p.win,
@@ -269,17 +406,17 @@ Deno.serve(async (req) => {
       if (game === "valorant") {
         const matchIdsRes = await fetch(`https://${continent}.api.riotgames.com/val/match/v1/matchlists/by-puuid/${puuid}`, { headers });
         if (!matchIdsRes.ok) return json({ error: `Valorant match history failed [${matchIdsRes.status}]` }, matchIdsRes.status);
-        const matchList = await matchIdsRes.json();
-        const matchIds = (matchList.history || []).slice(0, count).map((m: any) => m.matchId);
+        const matchList = await matchIdsRes.json() as ValorantMatchList;
+        const matchIds = (matchList.history || []).slice(0, count).map((m) => m.matchId);
 
         const matches = [];
         for (const matchId of matchIds) {
           const matchRes = await fetch(`https://${continent}.api.riotgames.com/val/match/v1/matches/${matchId}`, { headers });
           if (matchRes.ok) {
-            const match = await matchRes.json();
-            const player = match.players?.find((p: any) => p.puuid === puuid);
+            const match = await matchRes.json() as ValorantMatch;
+            const player = match.players?.find((participant) => participant.puuid === puuid);
             if (player) {
-              const team = match.teams?.find((t: any) => t.teamId === player.teamId);
+              const team = match.teams?.find((item) => item.teamId === player.teamId);
               matches.push({
                 matchId, map: match.matchInfo?.mapId, agent: player.characterId, win: team?.won ?? false,
                 kills: player.stats?.kills ?? 0, deaths: player.stats?.deaths ?? 0, assists: player.stats?.assists ?? 0,

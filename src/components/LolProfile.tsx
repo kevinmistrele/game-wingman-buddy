@@ -45,7 +45,7 @@ const LolProfile = ({ data }: { data: LolProfileResponse }) => {
   const maxCs = totalMatches ? Math.max(...data.recentMatches.map((m) => m.cs)) : 0;
 
   let currentStreak = 0;
-  let streakType: "win" | "loss" = data.recentMatches[0]?.win ? "win" : "loss";
+  const streakType: "win" | "loss" = data.recentMatches[0]?.win ? "win" : "loss";
   for (const m of data.recentMatches) {
     if ((streakType === "win" && m.win) || (streakType === "loss" && !m.win)) currentStreak++;
     else break;

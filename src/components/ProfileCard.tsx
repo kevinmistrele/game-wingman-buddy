@@ -13,6 +13,8 @@ import { TIERS, DIVISIONS, TIER_LABELS } from "@/lib/eloUtils";
 
 const RIOT_ID_REGEX = /^.{3,16}#[A-Za-z0-9]{3,5}$/;
 
+const getErrorMessage = (error: unknown) => error instanceof Error ? error.message : "Erro ao fazer upload.";
+
 const ProfileCard = () => {
   const navigate = useNavigate();
   const { user, profile, refreshProfile } = useAuth();
@@ -50,7 +52,7 @@ const ProfileCard = () => {
         rank: `${TIER_LABELS[riotRank.tier] ?? riotRank.tier} ${riotRank.rank}`,
       }).eq("user_id", user.id).then(() => refreshProfile());
     }
-  }, [riotRank, profile, user]);
+  }, [riotRank, profile, user, profileManualTier, profileRankSource, refreshProfile]);
 
   const effectiveRank = hasRiotRank
     ? { tier: riotRank.tier, division: riotRank.rank, source: "riot" as const, lp: riotRank.lp, winRate: riotRank.winRate }
@@ -69,7 +71,7 @@ const ProfileCard = () => {
       setManualTier(profileManualTier ?? "");
       setManualDivision(profileManualDivision ?? "IV");
     }
-  }, [profile]);
+  }, [profile, profileManualTier, profileManualDivision]);
 
   const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -87,7 +89,7 @@ const ProfileCard = () => {
       await supabase.from("profiles").update({ avatar_url: `${publicUrl}?t=${Date.now()}` }).eq("user_id", user.id);
       toast.success("Foto atualizada!");
       await refreshProfile();
-    } catch (err: any) { toast.error(err.message || "Erro ao fazer upload."); }
+    } catch (err: unknown) { toast.error(getErrorMessage(err)); }
     finally { setUploading(false); }
   };
 

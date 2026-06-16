@@ -44,7 +44,7 @@ function MatchmakingQueue() {
 
   useEffect(() => {
     if (status === "found") setJoiningQueue(false);
-    if (status === "idle") setRespondingMatch(null);
+    if (status !== "found") setRespondingMatch(null);
   }, [status]);
 
   // Navigate to chat when both accepted
@@ -64,7 +64,7 @@ function MatchmakingQueue() {
       setSelectedMyRole((profile.preferred_role as Role) ?? null);
       setSelectedDesiredRole((profile.preferred_duo_role as Role) ?? null);
     }
-  }, [isRanked]);
+  }, [isRanked, profile]);
 
   async function handleStart() {
     setJoiningQueue(true);

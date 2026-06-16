@@ -197,7 +197,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [user?.id]);
+  }, [user]);
 
   const signOut = async () => {
     if (user) {

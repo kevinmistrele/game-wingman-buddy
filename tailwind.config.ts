@@ -1,4 +1,5 @@
 import type { Config } from "tailwindcss";
+import tailwindcssAnimate from "tailwindcss-animate";
 import {
   fontFamily,
   fontSize,
@@ -119,5 +120,5 @@ export default {
       animation: tailwindAnimation,
     },
   },
-  plugins: [require("tailwindcss-animate")],
+  plugins: [tailwindcssAnimate],
 } satisfies Config;

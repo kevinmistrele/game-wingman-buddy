@@ -10,6 +10,8 @@ import logo from "@/assets/game-matching-vertical-original-transparent.png";
 
 const RIOT_ID_REGEX = /^.{3,16}#[A-Za-z0-9]{3,5}$/;
 
+const getErrorMessage = (error: unknown) => error instanceof Error ? error.message : "Erro inesperado";
+
 interface OnboardingModalProps {
   userId: string;
   defaultUsername: string;
@@ -64,8 +66,8 @@ const OnboardingModal = ({ userId, defaultUsername, onComplete }: OnboardingModa
 
       toast.success("Perfil configurado!");
       onComplete();
-    } catch (err: any) {
-      toast.error(err.message || "Erro inesperado");
+    } catch (err: unknown) {
+      toast.error(getErrorMessage(err));
     } finally {
       setLoading(false);
     }

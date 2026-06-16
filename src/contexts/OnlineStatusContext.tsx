@@ -71,7 +71,7 @@ export function OnlineStatusProvider({ children }: { children: ReactNode }) {
       channel.untrack().then(() => supabase.removeChannel(channel));
       channelRef.current = null;
     };
-  }, [user?.id]);
+  }, [user]);
 
   function isOnline(userId: string): boolean {
     return onlineUserIds.has(userId);
