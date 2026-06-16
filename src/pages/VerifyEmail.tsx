@@ -5,7 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { Mail, ArrowLeft, RefreshCw, ExternalLink, Crosshair, MessageCircle, Trophy } from "lucide-react";
-import logo from "@/assets/logo.png";
+import logo from "@/assets/game-matching-vertical-original-transparent.png";
 
 const COOLDOWN_SECONDS = 30;
 

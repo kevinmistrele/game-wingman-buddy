@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { Gamepad2, Mail, Lock, User, Chrome, Crosshair, Loader2 } from "lucide-react";
-import logo from "@/assets/logo.png";
+import logo from "@/assets/game-matching-vertical-original-transparent.png";
 import { validateRiotId as checkRiotId } from "@/lib/validators";
 import { parseApiError } from "@/lib/errors";
 

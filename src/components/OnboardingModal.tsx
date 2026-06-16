@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { User, Crosshair, Gamepad2 } from "lucide-react";
-import logo from "@/assets/logo.png";
+import logo from "@/assets/game-matching-vertical-original-transparent.png";
 
 const RIOT_ID_REGEX = /^.{3,16}#[A-Za-z0-9]{3,5}$/;
 
