@@ -154,9 +154,9 @@ const ProfileCard = () => {
         animate={{ opacity: 1, y: 0 }}
         className="clip-angle border border-border gradient-card p-8 max-w-md w-full"
       >
-        <div className="flex items-center justify-between mb-2">
-          <div className="flex items-center gap-5">
-            <div className="relative group">
+        <div className="flex items-start justify-between gap-3 mb-2">
+          <div className="flex min-w-0 items-center gap-5">
+            <div className="relative group shrink-0">
               <div className="h-20 w-20 rounded-full border-2 border-primary/40 bg-muted flex items-center justify-center font-display text-2xl font-bold text-primary box-glow-primary overflow-hidden">
                 {uploading ? (
                   <Loader2 className="h-6 w-6 animate-spin text-primary" />
@@ -171,11 +171,11 @@ const ProfileCard = () => {
               </button>
               <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleAvatarUpload} />
             </div>
-            <div>
+            <div className="min-w-0">
               {editing ? (
                 <Input value={username} onChange={(e) => setUsername(e.target.value)} className="font-display text-lg font-bold bg-muted border-border" />
               ) : (
-                <h2 className="font-display text-2xl font-bold tracking-wider text-foreground">{profile.username}</h2>
+                <h2 className="truncate font-display text-2xl font-bold tracking-wider text-foreground">{profile.username}</h2>
               )}
               {effectiveRank ? (
                 <div className="mt-1">
@@ -189,10 +189,10 @@ const ProfileCard = () => {
               ) : (
                 <p className="text-sm text-muted-foreground">Sem Rank</p>
               )}
-              {displayEmail && <p className="text-xs text-muted-foreground/60 mt-0.5">{displayEmail}</p>}
+              {displayEmail && <p className="truncate text-xs text-muted-foreground/60 mt-0.5">{displayEmail}</p>}
             </div>
           </div>
-          <button onClick={() => editing ? handleSave() : setEditing(true)} disabled={saving} className="p-2 text-muted-foreground transition-colors hover:text-primary">
+          <button onClick={() => editing ? handleSave() : setEditing(true)} disabled={saving} className="shrink-0 p-2 text-muted-foreground transition-colors hover:text-primary" aria-label={editing ? "Salvar perfil" : "Editar perfil"}>
             {editing ? <Save className="h-5 w-5" /> : <Edit2 className="h-5 w-5" />}
           </button>
         </div>
