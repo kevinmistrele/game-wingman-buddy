@@ -304,6 +304,9 @@ const ProfileCard = () => {
             )}
 
             <div className="mt-6 border-t border-border pt-5">
+              <button onClick={() => setEditing(true)} className="mb-3 w-full clip-angle-sm border border-border px-5 py-3 font-display text-sm font-semibold tracking-wider text-foreground transition-all hover:border-primary/50 hover:text-primary flex items-center justify-center gap-2">
+                <Edit2 className="h-5 w-5" /> Editar perfil
+              </button>
               <button onClick={() => navigate("/settings")} className="w-full clip-angle-sm bg-muted hover:bg-accent px-5 py-3 font-display text-sm font-semibold tracking-wider text-foreground transition-all flex items-center justify-center gap-2">
                 <Settings className="h-5 w-5" /> Configurações
               </button>
