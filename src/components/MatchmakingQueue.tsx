@@ -64,7 +64,7 @@ function MatchmakingQueue() {
       setSelectedMyRole((profile.preferred_role as Role) ?? null);
       setSelectedDesiredRole((profile.preferred_duo_role as Role) ?? null);
     }
-  }, [isRanked]);
+  }, [isRanked, profile]);
 
   async function handleStart() {
     setJoiningQueue(true);

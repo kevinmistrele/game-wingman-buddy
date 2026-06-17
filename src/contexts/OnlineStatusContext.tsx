@@ -21,17 +21,18 @@ interface PresenceState {
 
 export function OnlineStatusProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
+  const userId = user?.id;
   const [onlineUserIds, setOnlineUserIds] = useState<Set<string>>(new Set());
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
 
   useEffect(() => {
-    if (!user) {
+    if (!userId) {
       setOnlineUserIds(new Set());
       return;
     }
 
     const channel = supabase.channel("online-users", {
-      config: { presence: { key: user.id } },
+      config: { presence: { key: userId } },
     });
 
     channelRef.current = channel;
@@ -50,20 +51,22 @@ export function OnlineStatusProvider({ children }: { children: ReactNode }) {
       .on("presence", { event: "join" }, ({ newPresences }) => {
         setOnlineUserIds(prev => {
           const next = new Set(prev);
-          newPresences.forEach((p: PresenceState) => { if (p.user_id) next.add(p.user_id); });
+          const presences = newPresences as unknown as PresenceState[];
+          presences.forEach((presence) => { if (presence.user_id) next.add(presence.user_id); });
           return next;
         });
       })
       .on("presence", { event: "leave" }, ({ leftPresences }) => {
         setOnlineUserIds(prev => {
           const next = new Set(prev);
-          leftPresences.forEach((p: PresenceState) => { if (p.user_id) next.delete(p.user_id); });
+          const presences = leftPresences as unknown as PresenceState[];
+          presences.forEach((presence) => { if (presence.user_id) next.delete(presence.user_id); });
           return next;
         });
       })
       .subscribe(async (status) => {
         if (status === "SUBSCRIBED") {
-          await channel.track({ user_id: user.id, online_at: new Date().toISOString() });
+          await channel.track({ user_id: userId, online_at: new Date().toISOString() });
         }
       });
 
@@ -71,7 +74,7 @@ export function OnlineStatusProvider({ children }: { children: ReactNode }) {
       channel.untrack().then(() => supabase.removeChannel(channel));
       channelRef.current = null;
     };
-  }, [user?.id]);
+  }, [userId]);
 
   function isOnline(userId: string): boolean {
     return onlineUserIds.has(userId);

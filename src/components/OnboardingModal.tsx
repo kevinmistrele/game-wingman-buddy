@@ -7,8 +7,8 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { User, Crosshair, Gamepad2 } from "lucide-react";
 import logo from "@/assets/game-matching-vertical-original-transparent.png";
-
-const RIOT_ID_REGEX = /^.{3,16}#[A-Za-z0-9]{3,5}$/;
+import { parseApiError } from "@/lib/errors";
+import { isValidRiotId } from "@/lib/validators";
 
 interface OnboardingModalProps {
   userId: string;
@@ -16,7 +16,7 @@ interface OnboardingModalProps {
   onComplete: () => void;
 }
 
-const OnboardingModal = ({ userId, defaultUsername, onComplete }: OnboardingModalProps) => {
+function OnboardingModal({ userId, defaultUsername, onComplete }: OnboardingModalProps) {
   const [username, setUsername] = useState(defaultUsername);
   const [riotId, setRiotId] = useState("");
   const [riotIdError, setRiotIdError] = useState("");
@@ -24,7 +24,7 @@ const OnboardingModal = ({ userId, defaultUsername, onComplete }: OnboardingModa
 
   const validateRiotId = (value: string) => {
     if (!value) { setRiotIdError(""); return true; }
-    if (!RIOT_ID_REGEX.test(value)) {
+    if (!isValidRiotId(value)) {
       setRiotIdError("Formato inválido. Use Nome#TAG (ex: Player#BR1)");
       return false;
     }
@@ -64,8 +64,8 @@ const OnboardingModal = ({ userId, defaultUsername, onComplete }: OnboardingModa
 
       toast.success("Perfil configurado!");
       onComplete();
-    } catch (err: any) {
-      toast.error(err.message || "Erro inesperado");
+    } catch (error) {
+      toast.error(parseApiError(error));
     } finally {
       setLoading(false);
     }
@@ -124,6 +124,6 @@ const OnboardingModal = ({ userId, defaultUsername, onComplete }: OnboardingModa
       </motion.div>
     </div>
   );
-};
+}
 
 export default OnboardingModal;

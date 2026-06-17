@@ -1,15 +1,11 @@
 import { motion } from "framer-motion";
-import type { LolProfileResponse, LolMatch } from "@/hooks/useRiotMatches";
+import type { LolProfileResponse } from "@/hooks/useRiotMatches";
 import RankBadge from "@/components/RankBadge";
 import { Trophy, Swords, Shield, Target, Flame, Coins, Eye, TrendingUp, BarChart3 } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
+import { formatCompactNumber, getLolMatchSummary } from "@/lib/lolStats";
 
 const DDRAGON_VERSION = "14.10.1";
-
-const formatNumber = (n: number) => {
-  if (n >= 1000) return `${(n / 1000).toFixed(1)}K`;
-  return Math.round(n).toString();
-};
 
 const StatItem = ({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) => (
   <div className="text-center space-y-1">
@@ -22,30 +18,11 @@ const StatItem = ({ icon, label, value }: { icon: React.ReactNode; label: string
 const OverviewTab = ({ data }: { data: LolProfileResponse }) => {
   const ranked = data.summoner?.ranked?.find((r) => r.queueType === "RANKED_SOLO_5x5");
   const flexRanked = data.summoner?.ranked?.find((r) => r.queueType === "RANKED_FLEX_SR");
-  const totalMatches = data.recentMatches.length;
-  const wins = data.recentMatches.filter((m) => m.win).length;
-  const losses = totalMatches - wins;
-
-  const avg = (fn: (m: LolMatch) => number) => totalMatches ? data.recentMatches.reduce((a, m) => a + fn(m), 0) / totalMatches : 0;
-  const avgKills = avg((m) => m.kills).toFixed(1);
-  const avgDeaths = avg((m) => m.deaths).toFixed(1);
-  const avgAssists = avg((m) => m.assists).toFixed(1);
-  const avgCsPerMin = totalMatches ? (data.recentMatches.reduce((a, m) => a + (m.duration > 0 ? m.cs / (m.duration / 60) : 0), 0) / totalMatches).toFixed(1) : "0";
-  const avgDamage = avg((m) => m.damage);
-  const avgGold = avg((m) => m.goldEarned);
-  const avgVision = avg((m) => m.visionScore).toFixed(1);
-  const avgKda = avg((m) => m.deaths === 0 ? (m.kills + m.assists) : (m.kills + m.assists) / m.deaths).toFixed(2);
-
-  const bestKda = totalMatches ? Math.max(...data.recentMatches.map((m) => m.deaths === 0 ? m.kills + m.assists : (m.kills + m.assists) / m.deaths)) : 0;
-  const maxDamage = totalMatches ? Math.max(...data.recentMatches.map((m) => m.damage)) : 0;
-  const maxCs = totalMatches ? Math.max(...data.recentMatches.map((m) => m.cs)) : 0;
-
-  let currentStreak = 0;
-  let streakType: "win" | "loss" = data.recentMatches[0]?.win ? "win" : "loss";
-  for (const m of data.recentMatches) {
-    if ((streakType === "win" && m.win) || (streakType === "loss" && !m.win)) currentStreak++;
-    else break;
-  }
+  const {
+    totalMatches, wins, losses, avgKills, avgDeaths, avgAssists, avgCsPerMin,
+    avgDamage, avgGold, avgVision, avgKda, bestKda, maxDamage, maxCs,
+    currentStreak, streakType,
+  } = getLolMatchSummary(data.recentMatches);
 
   return (
     <div className="space-y-4">
@@ -92,8 +69,8 @@ const OverviewTab = ({ data }: { data: LolProfileResponse }) => {
             <BarChart3 className="h-3 w-3" /> DESEMPENHO
           </h4>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-            <StatItem icon={<Flame className="h-4 w-4 text-orange-400" />} label="DMG MÉDIO" value={formatNumber(avgDamage)} />
-            <StatItem icon={<Coins className="h-4 w-4 text-warning" />} label="OURO MÉDIO" value={formatNumber(avgGold)} />
+            <StatItem icon={<Flame className="h-4 w-4 text-orange-400" />} label="DMG MÉDIO" value={formatCompactNumber(avgDamage)} />
+            <StatItem icon={<Coins className="h-4 w-4 text-warning" />} label="OURO MÉDIO" value={formatCompactNumber(avgGold)} />
             <StatItem icon={<Eye className="h-4 w-4 text-info" />} label="VISÃO MÉDIA" value={avgVision} />
             <StatItem icon={<TrendingUp className="h-4 w-4 text-emerald-400" />} label="CS/MIN" value={avgCsPerMin} />
           </div>
@@ -117,7 +94,7 @@ const OverviewTab = ({ data }: { data: LolProfileResponse }) => {
             </div>
             <div className="text-center">
               <p className="text-xs text-muted-foreground font-display">MAX DANO</p>
-              <p className="font-display text-sm font-bold text-foreground">{formatNumber(maxDamage)}</p>
+              <p className="font-display text-sm font-bold text-foreground">{formatCompactNumber(maxDamage)}</p>
             </div>
             <div className="text-center">
               <p className="text-xs text-muted-foreground font-display">MAX CS</p>

@@ -1,10 +1,9 @@
 import { motion } from "framer-motion";
 import { Crosshair, AlertTriangle, Users } from "lucide-react";
 import { motionConfig } from "@/design-system/tokens";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import RankBadge from "@/components/RankBadge";
-import RoleIcon, { ROLE_LABELS } from "@/components/RoleIcon";
-import { QUEUE_MODES, ROLES, type QueueMode, type Role } from "@/lib/eloUtils";
+import RoleSelect from "@/components/RoleSelect";
+import { QUEUE_MODES, type QueueMode, type Role } from "@/lib/eloUtils";
 import type { ResolvedRank, RankSource } from "@/types/riot";
 
 interface QueueFormProps {
@@ -98,8 +97,8 @@ export function QueueForm({
         >
           <h3 className="font-display text-xs tracking-[0.2em] text-muted-foreground text-center mb-3">PREFERÊNCIA DE ROTA</h3>
           <div className="grid grid-cols-2 gap-3">
-            <RoleSelector label="SUA ROTA" value={selectedMyRole} onChange={onMyRoleChange} />
-            <RoleSelector label="ROTA DO DUO" value={selectedDesiredRole} onChange={onDesiredRoleChange} />
+            <RoleSelect label="SUA ROTA" value={selectedMyRole} onChange={onMyRoleChange} />
+            <RoleSelect label="ROTA DO DUO" value={selectedDesiredRole} onChange={onDesiredRoleChange} />
           </div>
         </motion.div>
       )}
@@ -116,42 +115,5 @@ export function QueueForm({
         ENCONTRAR MATCH
       </button>
     </motion.div>
-  );
-}
-
-interface RoleSelectorProps {
-  label: string;
-  value: Role | null;
-  onChange: (role: Role | null) => void;
-}
-
-function RoleSelector({ label, value, onChange }: RoleSelectorProps) {
-  return (
-    <div>
-      <label className="block text-xs text-muted-foreground mb-1.5 font-display tracking-wider">{label}</label>
-      <Select value={value ?? "any"} onValueChange={(v) => onChange(v === "any" ? null : v as Role)}>
-        <SelectTrigger className="bg-background border-border">
-          <SelectValue>
-            {value ? (
-              <span className="flex items-center gap-2">
-                <RoleIcon role={value} size="sm" />
-                {ROLE_LABELS[value]}
-              </span>
-            ) : "Qualquer"}
-          </SelectValue>
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="any">Qualquer</SelectItem>
-          {ROLES.map((role) => (
-            <SelectItem key={role.value} value={role.value}>
-              <span className="flex items-center gap-2">
-                <RoleIcon role={role.value} size="sm" />
-                {role.label}
-              </span>
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-    </div>
   );
 }

@@ -175,16 +175,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   // Realtime: detect when another device takes over our account
   useEffect(() => {
-    if (!user) return;
+    const userId = user?.id;
+    if (!userId) return;
     const channel = supabase
-      .channel(`session-watch-${user.id}`)
+      .channel(`session-watch-${userId}`)
       .on(
         "postgres_changes",
-        { event: "UPDATE", schema: "public", table: "profiles", filter: `user_id=eq.${user.id}` },
+        { event: "UPDATE", schema: "public", table: "profiles", filter: `user_id=eq.${userId}` },
         (payload) => {
           const newId = (payload.new as { active_session_id?: string })?.active_session_id;
           const localId = getLocalSessionId();
-          if (newId && localId && newId !== localId && claimedFor.current === user.id) {
+          if (newId && localId && newId !== localId && claimedFor.current === userId) {
             toast.error("Sua conta foi acessada em outro dispositivo. Você foi desconectado.");
             clearLocalSessionId();
             claimedFor.current = null;
