@@ -2,10 +2,9 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRiotProfile } from "@/hooks/useRiotMatches";
-import { canMatch, areRolesCompatible } from "@/lib/eloUtils";
 import { playMatchFoundSound, playMatchAcceptedSound } from "@/lib/soundUtils";
 import { resolveProfileRank } from "@/lib/riotUtils";
-import { findOrCreateConversation, fetchExcludedUserIds } from "@/lib/conversationUtils";
+import { findOrCreateConversation } from "@/lib/conversationUtils";
 import type { Tables } from "@/integrations/supabase/types";
 import type { QueueMode, Role } from "@/lib/eloUtils";
 import type { MatchedPlayerInfo, QueueStatus, SearchPhase } from "@/types/matchmaking";
@@ -16,26 +15,49 @@ type Match = Tables<"matches">;
 const QUEUE_ACTIVE_WINDOW_MS = 2 * 60 * 1000;
 const GAME = "lol" as const;
 
+async function callMatchmakingApi(
+  action: string,
+  data: Record<string, unknown>,
+  token: string,
+): Promise<Record<string, unknown>> {
+  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+  const apiKey      = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+
+  const res = await fetch(`${supabaseUrl}/functions/v1/matchmaking`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+      apikey: apiKey,
+    },
+    body: JSON.stringify({ action, ...data }),
+  });
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ error: "Unknown error" }));
+    throw new Error((err as { error?: string }).error ?? "Matchmaking API error");
+  }
+  return res.json();
+}
+
 export function useMatchmaking() {
   const { user, profile } = useAuth();
 
-  const [status, setStatus] = useState<QueueStatus>("idle");
-  const [currentMatch, setCurrentMatch] = useState<Match | null>(null);
+  const [status, setStatus]               = useState<QueueStatus>("idle");
+  const [currentMatch, setCurrentMatch]   = useState<Match | null>(null);
   const [matchedPlayer, setMatchedPlayer] = useState<MatchedPlayerInfo | null>(null);
-  const [queueEntryId, setQueueEntryId] = useState<string | null>(null);
-  const [queueCounts, setQueueCounts] = useState<Record<string, number>>({});
+  const [queueEntryId, setQueueEntryId]   = useState<string | null>(null);
+  const [queueCounts, setQueueCounts]     = useState<Record<string, number>>({});
   const [otherAccepted, setOtherAccepted] = useState(false);
   const [acceptedConvoId, setAcceptedConvoId] = useState<string | null>(null);
-  const [searchPhase, setSearchPhase] = useState<SearchPhase>("strict");
+  const [searchPhase, setSearchPhase]     = useState<SearchPhase>("strict");
 
-  const selectedModeRef = useRef<QueueMode>("normal");
-  const selectedRolesRef = useRef<{ myRole: Role | null; desiredDuoRole: Role | null }>({ myRole: null, desiredDuoRole: null });
   const queueEntryIdRef = useRef<string | null>(null);
 
   // Keep ref in sync (used in beforeunload)
   useEffect(() => { queueEntryIdRef.current = queueEntryId; }, [queueEntryId]);
 
-  // ─── Resolve current user rank ──────────────────────────────────────────────
+  // ─── Resolve current user rank (display only) ────────────────────────────
   const { data: riotData } = useRiotProfile(GAME, profile?.riot_id, "br1", 1);
   const riotRank = riotData?.game === GAME && riotData.summoner?.ranked
     ? riotData.summoner.ranked.find(r => r.queueType === "RANKED_SOLO_5x5")
@@ -50,7 +72,7 @@ export function useMatchmaking() {
   const myRank = riotRank ?? manualRank;
   const myRankSource: RankSource | null = riotRank ? "riot" : manualRank ? "manual" : null;
 
-  // ─── Search phase timer ──────────────────────────────────────────────────────
+  // ─── Search phase timer ──────────────────────────────────────────────────
   useEffect(() => {
     if (status !== "searching") return;
     setSearchPhase("strict");
@@ -58,7 +80,22 @@ export function useMatchmaking() {
     return () => clearTimeout(timer);
   }, [status]);
 
-  // ─── Auto-cancel on unload/unmount ───────────────────────────────────────────
+  // ─── Retry matching when entering expanded phase ─────────────────────────
+  const retryMatch = useCallback(async () => {
+    if (!user || !queueEntryIdRef.current) return;
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session?.access_token) return;
+    try {
+      await callMatchmakingApi("retry", { queueEntryId: queueEntryIdRef.current }, session.access_token);
+    } catch { /* best-effort */ }
+  }, [user]);
+
+  useEffect(() => {
+    if (searchPhase !== "expanded" || status !== "searching" || !queueEntryId || !user) return;
+    retryMatch();
+  }, [retryMatch, queueEntryId, searchPhase, status, user]);
+
+  // ─── Auto-cancel on unload/unmount ───────────────────────────────────────
   useEffect(() => {
     const handleBeforeUnload = () => {
       const entryId = queueEntryIdRef.current;
@@ -75,7 +112,7 @@ export function useMatchmaking() {
     };
   }, []);
 
-  // ─── Queue counts polling ────────────────────────────────────────────────────
+  // ─── Queue counts polling ────────────────────────────────────────────────
   useEffect(() => {
     async function fetchCounts() {
       const cutoff = new Date(Date.now() - QUEUE_ACTIVE_WINDOW_MS).toISOString();
@@ -96,7 +133,7 @@ export function useMatchmaking() {
     return () => clearInterval(interval);
   }, []);
 
-  // ─── Realtime: match events ──────────────────────────────────────────────────
+  // ─── Realtime: match events ──────────────────────────────────────────────
   useEffect(() => {
     if (!user) return;
 
@@ -112,7 +149,7 @@ export function useMatchmaking() {
           setStatus("found");
           playMatchFoundSound();
 
-          const isUser1 = match.user1_id === user.id;
+          const isUser1     = match.user1_id === user.id;
           const otherUserId = isUser1 ? match.user2_id : match.user1_id;
           const otherStatus = isUser1 ? match.user2_status : match.user1_status;
 
@@ -142,7 +179,7 @@ export function useMatchmaking() {
     return () => { supabase.removeChannel(channel); };
   }, [user]);
 
-  // ─── Polling fallback for accepted match ─────────────────────────────────────
+  // ─── Polling fallback for accepted match ─────────────────────────────────
   useEffect(() => {
     if (status !== "found" || !currentMatch || !user) return;
 
@@ -151,9 +188,9 @@ export function useMatchmaking() {
       const { data: fresh } = await supabase.from("matches").select("*").eq("id", matchId).single();
       if (!fresh) return;
 
-      const isUser1 = fresh.user1_id === user.id;
+      const isUser1     = fresh.user1_id === user.id;
       const otherStatus = isUser1 ? fresh.user2_status : fresh.user1_status;
-      const myStatus = isUser1 ? fresh.user1_status : fresh.user2_status;
+      const myStatus    = isUser1 ? fresh.user1_status : fresh.user2_status;
 
       setOtherAccepted(otherStatus === "accepted");
 
@@ -174,7 +211,7 @@ export function useMatchmaking() {
     setOtherAccepted((isUser1 ? currentMatch.user2_status : currentMatch.user1_status) === "accepted");
   }, [currentMatch, user, status]);
 
-  // ─── Helpers ─────────────────────────────────────────────────────────────────
+  // ─── Helpers ─────────────────────────────────────────────────────────────
   function resetMatchState() {
     setStatus("idle");
     setCurrentMatch(null);
@@ -182,126 +219,67 @@ export function useMatchmaking() {
     setOtherAccepted(false);
   }
 
-  // ─── Actions ─────────────────────────────────────────────────────────────────
-  const attemptMatch = useCallback(async () => {
-    if (!user || !queueEntryIdRef.current) return;
-
-    const mode = selectedModeRef.current;
-    const isRanked = mode === "solo_duo" || mode === "flex";
-    const { myRole, desiredDuoRole } = selectedRolesRef.current;
-
-    const excludedIds = await fetchExcludedUserIds(user.id);
-    const cutoff = new Date(Date.now() - QUEUE_ACTIVE_WINDOW_MS).toISOString();
-
-    const { data: waitingPlayers } = await supabase
-      .from("matchmaking_queue").select("*")
-      .eq("game", GAME).eq("status", "waiting")
-      .neq("user_id", user.id).gte("created_at", cutoff)
-      .order("created_at", { ascending: true }).limit(20);
-
-    if (!waitingPlayers) return;
-
-    const candidates = waitingPlayers
-      .filter(p => (p.mode ?? "normal") === mode)
-      .filter(p => !excludedIds.has(p.user_id));
-
-    for (const opponent of candidates) {
-      const { data: freshEntry } = await supabase
-        .from("matchmaking_queue").select("status").eq("id", opponent.id).single();
-      if (!freshEntry || freshEntry.status !== "waiting") continue;
-
-      if (isRanked) {
-        try {
-          const { data: oppProfile } = await supabase.from("profiles").select("*").eq("user_id", opponent.user_id).single();
-          if (!oppProfile) continue;
-          const { rank: oppRank } = await resolveProfileRank(oppProfile);
-          if (!oppRank) continue;
-          if (!canMatch(mode, myRank, { tier: oppRank.tier, rank: oppRank.rank })) continue;
-          if (searchPhase === "strict") {
-            if (!areRolesCompatible(myRole, desiredDuoRole, opponent.my_role ?? null, opponent.desired_duo_role ?? null)) continue;
-          }
-        } catch { continue; }
-      }
-
-      const { data: match, error } = await supabase
-        .from("matches").insert({ user1_id: opponent.user_id, user2_id: user.id, game: GAME }).select().single();
-      if (!error && match) {
-        await supabase.from("matchmaking_queue").update({ status: "matched" }).in("id", [queueEntryIdRef.current!, opponent.id]);
-        break;
-      }
-    }
-  }, [user, myRank, searchPhase]);
-
-  useEffect(() => {
-    if (searchPhase !== "expanded" || status !== "searching" || !queueEntryId || !user) return;
-    attemptMatch();
-  }, [attemptMatch, queueEntryId, searchPhase, status, user]);
-
+  // ─── Actions ─────────────────────────────────────────────────────────────
   const joinQueue = useCallback(async (mode: QueueMode, myRole?: Role | null, desiredDuoRole?: Role | null) => {
     if (!user) return;
 
-    const isRanked = mode === "solo_duo" || mode === "flex";
-    if (isRanked && !myRank) throw new Error("Você precisa ter um rank para entrar em filas ranqueadas.");
-    if (mode === "solo_duo" && myRank) {
-      const highTiers = ["MASTER", "GRANDMASTER", "CHALLENGER"];
-      if (highTiers.includes(myRank.tier)) throw new Error("Mestre, Grão-Mestre e Desafiante não podem jogar Solo/Duo.");
-    }
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session?.access_token) throw new Error("Sessão expirada. Faça login novamente.");
 
-    const roleToSave = isRanked ? (myRole ?? null) : null;
-    const desiredToSave = isRanked ? (desiredDuoRole ?? null) : null;
+    const result = await callMatchmakingApi(
+      "join",
+      { mode, myRole: myRole ?? null, desiredDuoRole: desiredDuoRole ?? null },
+      session.access_token,
+    );
 
-    selectedModeRef.current = mode;
-    selectedRolesRef.current = { myRole: roleToSave, desiredDuoRole: desiredToSave };
-
-    const { data, error } = await supabase
-      .from("matchmaking_queue")
-      .insert({ user_id: user.id, game: GAME, status: "waiting", mode, my_role: roleToSave, desired_duo_role: desiredToSave })
-      .select().single();
-    if (error) throw error;
-
-    setQueueEntryId(data.id);
+    setQueueEntryId(result.queueEntryId as string);
     setStatus("searching");
-    setTimeout(() => attemptMatch(), 100);
-  }, [user, myRank, attemptMatch]);
+  }, [user]);
 
   const cancelQueue = useCallback(async () => {
-    if (queueEntryId) await supabase.from("matchmaking_queue").update({ status: "cancelled" }).eq("id", queueEntryId);
+    if (!queueEntryId || !user) return;
+
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session?.access_token) {
+      await callMatchmakingApi("cancel", { queueEntryId }, session.access_token).catch(() => {
+        supabase.from("matchmaking_queue").update({ status: "cancelled" }).eq("id", queueEntryId).then();
+      });
+    } else {
+      await supabase.from("matchmaking_queue").update({ status: "cancelled" }).eq("id", queueEntryId);
+    }
+
     setStatus("idle");
     setQueueEntryId(null);
-  }, [queueEntryId]);
+  }, [queueEntryId, user]);
 
   const respondToMatch = useCallback(async (accepted: boolean) => {
     if (!currentMatch || !user) return null;
 
-    const isUser1 = currentMatch.user1_id === user.id;
-    const statusField = isUser1 ? "user1_status" : "user2_status";
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session?.access_token) throw new Error("Sessão expirada. Faça login novamente.");
+
+    const result = await callMatchmakingApi(
+      "respond",
+      { matchId: currentMatch.id, accepted },
+      session.access_token,
+    );
 
     if (!accepted) {
-      await supabase.from("matches").update({ [statusField]: "declined", status: "declined" }).eq("id", currentMatch.id);
       resetMatchState();
       return null;
     }
 
-    await supabase.from("matches").update({ [statusField]: "accepted" }).eq("id", currentMatch.id);
-
-    const { data: freshMatch } = await supabase.from("matches").select("*").eq("id", currentMatch.id).single();
-    if (!freshMatch) return null;
-
-    setCurrentMatch(freshMatch as Match);
-    setOtherAccepted((isUser1 ? freshMatch.user2_status : freshMatch.user1_status) === "accepted");
-
-    const bothAccepted = freshMatch.user1_status === "accepted" && freshMatch.user2_status === "accepted";
-    if (!bothAccepted) return null;
-
-    if (freshMatch.status !== "accepted") {
-      await supabase.from("matches").update({ status: "accepted" }).eq("id", freshMatch.id);
+    const convoId = (result.conversationId as string | null) ?? null;
+    if (convoId) {
+      setAcceptedConvoId(convoId);
+      setStatus("idle");
     }
-
-    const convoId = await findOrCreateConversation(user.id, freshMatch.user1_id, freshMatch.user2_id, freshMatch.id);
-    if (convoId) setAcceptedConvoId(convoId);
-    setStatus("idle");
     return convoId;
   }, [currentMatch, user]);
 
-  return { status, currentMatch, matchedPlayer, myRank, myRankSource, queueCounts, otherAccepted, acceptedConvoId, searchPhase, joinQueue, cancelQueue, respondToMatch };
+  return {
+    status, currentMatch, matchedPlayer, myRank, myRankSource,
+    queueCounts, otherAccepted, acceptedConvoId, searchPhase,
+    joinQueue, cancelQueue, respondToMatch,
+  };
 }
