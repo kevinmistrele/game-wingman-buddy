@@ -1,0 +1,11 @@
+{
+  "compilerOptions": {
+    "lib": ["Deno.ns", "deno.window"],
+    "strict": false,
+    "noUnusedLocals": false,
+    "noUnusedParameters": false
+  },
+  "imports": {
+    "zod": "npm:zod@3.25.76"
+  }
+}
