@@ -10,6 +10,7 @@ import {
   zIndex,
   borderRadius,
 } from "./src/design-system/tokens";
+import tailwindcssAnimate from "tailwindcss-animate";
 
 export default {
   darkMode: ["class"],
@@ -119,5 +120,5 @@ export default {
       animation: tailwindAnimation,
     },
   },
-  plugins: [require("tailwindcss-animate")],
+  plugins: [tailwindcssAnimate],
 } satisfies Config;

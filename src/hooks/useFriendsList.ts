@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { getMyFriends } from "@/lib/supabaseRpc";
 import type { FriendWithProfile } from "@/types/chat";
 import type { FriendRow } from "@/types/supabase-rpc";
 
@@ -43,10 +44,10 @@ export function useFriendsList(onFriendshipsChanged?: () => void) {
   const fetchFriends = useCallback(async () => {
     if (!user) return;
 
-    const { data, error } = await supabase.rpc("get_my_friends");
+    const { data, error } = await getMyFriends();
     if (error || !data) return;
 
-    setFriends((data as FriendRow[]).map(rowToFriendWithProfile));
+    setFriends(data.map(rowToFriendWithProfile));
   }, [user]);
 
   useEffect(() => { fetchFriends(); }, [fetchFriends]);

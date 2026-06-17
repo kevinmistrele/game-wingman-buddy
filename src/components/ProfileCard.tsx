@@ -10,10 +10,12 @@ import { useNavigate } from "react-router-dom";
 import { useRiotProfile } from "@/hooks/useRiotMatches";
 import RankBadge from "@/components/RankBadge";
 import { TIERS, DIVISIONS, TIER_LABELS } from "@/lib/eloUtils";
+import { parseApiError } from "@/lib/errors";
+import { isValidRiotId } from "@/lib/validators";
 
-const RIOT_ID_REGEX = /^.{3,16}#[A-Za-z0-9]{3,5}$/;
+const HIGH_TIERS = ["MASTER", "GRANDMASTER", "CHALLENGER"];
 
-const ProfileCard = () => {
+function ProfileCard() {
   const navigate = useNavigate();
   const { user, profile, refreshProfile } = useAuth();
   const [editing, setEditing] = useState(false);
@@ -50,7 +52,7 @@ const ProfileCard = () => {
         rank: `${TIER_LABELS[riotRank.tier] ?? riotRank.tier} ${riotRank.rank}`,
       }).eq("user_id", user.id).then(() => refreshProfile());
     }
-  }, [riotRank, profile, user]);
+  }, [profile, profileManualTier, profileRankSource, refreshProfile, riotRank, user]);
 
   const effectiveRank = hasRiotRank
     ? { tier: riotRank.tier, division: riotRank.rank, source: "riot" as const, lp: riotRank.lp, winRate: riotRank.winRate }
@@ -58,8 +60,7 @@ const ProfileCard = () => {
       ? { tier: profileManualTier, division: profileManualDivision ?? "IV", source: "manual" as const, lp: undefined, winRate: undefined }
       : null;
 
-  const highTiers = ["MASTER", "GRANDMASTER", "CHALLENGER"];
-  const showDivision = manualTier && !highTiers.includes(manualTier);
+  const showDivision = manualTier && !HIGH_TIERS.includes(manualTier);
 
   useEffect(() => {
     if (profile) {
@@ -69,9 +70,9 @@ const ProfileCard = () => {
       setManualTier(profileManualTier ?? "");
       setManualDivision(profileManualDivision ?? "IV");
     }
-  }, [profile]);
+  }, [profile, profileManualDivision, profileManualTier]);
 
-  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  async function handleAvatarUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file || !user) return;
     if (!file.type.startsWith("image/")) { toast.error("Selecione um arquivo de imagem."); return; }
@@ -87,13 +88,13 @@ const ProfileCard = () => {
       await supabase.from("profiles").update({ avatar_url: `${publicUrl}?t=${Date.now()}` }).eq("user_id", user.id);
       toast.success("Foto atualizada!");
       await refreshProfile();
-    } catch (err: any) { toast.error(err.message || "Erro ao fazer upload."); }
+    } catch (error) { toast.error(parseApiError(error)); }
     finally { setUploading(false); }
-  };
+  }
 
-  const handleSave = async () => {
+  async function handleSave() {
     if (!profile) return;
-    if (riotId && !RIOT_ID_REGEX.test(riotId)) {
+    if (riotId && !isValidRiotId(riotId)) {
       toast.error("Riot ID inválido. Use o formato Nome#TAG (ex: Player#BR1)");
       return;
     }
@@ -110,8 +111,8 @@ const ProfileCard = () => {
       }
 
       const tier = manualTier || null;
-      const division = highTiers.includes(manualTier) ? "I" : (manualDivision || "IV");
-      const rankDisplay = tier ? `${TIER_LABELS[tier] ?? tier} ${highTiers.includes(tier) ? "" : division}`.trim() : null;
+      const division = HIGH_TIERS.includes(manualTier) ? "I" : (manualDivision || "IV");
+      const rankDisplay = tier ? `${TIER_LABELS[tier] ?? tier} ${HIGH_TIERS.includes(tier) ? "" : division}`.trim() : null;
 
       const basePayload = {
         username: username.trim(),
@@ -139,7 +140,7 @@ const ProfileCard = () => {
       setEditing(false);
       await refreshProfile();
     } finally { setSaving(false); }
-  };
+  }
 
   if (!profile) return null;
 
@@ -166,7 +167,7 @@ const ProfileCard = () => {
                   initials
                 )}
               </div>
-              <button onClick={() => fileInputRef.current?.click()} className="absolute inset-0 rounded-full bg-background/60 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+              <button onClick={() => fileInputRef.current?.click()} className="absolute inset-0 rounded-full bg-background/60 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity" aria-label="Atualizar foto de perfil">
                 <Camera className="h-5 w-5 text-foreground" />
               </button>
               <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleAvatarUpload} />
@@ -206,7 +207,7 @@ const ProfileCard = () => {
                   {profile.riot_id ? "Nenhum rank encontrado via API. Selecione manualmente:" : "Selecione seu rank:"}
                 </p>
                 <div className="flex gap-2">
-                  <Select value={manualTier || "none"} onValueChange={(v) => { setManualTier(v === "none" ? "" : v); if (highTiers.includes(v)) setManualDivision("I"); }}>
+                  <Select value={manualTier || "none"} onValueChange={(v) => { setManualTier(v === "none" ? "" : v); if (HIGH_TIERS.includes(v)) setManualDivision("I"); }}>
                     <SelectTrigger className="bg-muted border-border flex-1"><SelectValue placeholder="Elo" /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="none">Sem Rank</SelectItem>
@@ -279,7 +280,7 @@ const ProfileCard = () => {
                       <p className="text-sm font-medium text-foreground">{profile.discord_username}</p>
                     </div>
                   </div>
-                  <button onClick={() => { navigator.clipboard.writeText(profile.discord_username!); toast.success("Copiado!"); }} className="p-2 text-muted-foreground transition-colors hover:text-primary">
+                  <button onClick={() => { navigator.clipboard.writeText(profile.discord_username!); toast.success("Copiado!"); }} className="p-2 text-muted-foreground transition-colors hover:text-primary" aria-label="Copiar Discord">
                     <Copy className="h-4 w-4" />
                   </button>
                 </div>
@@ -296,7 +297,7 @@ const ProfileCard = () => {
                       <p className="text-sm font-medium text-foreground">{profile.riot_id}</p>
                     </div>
                   </div>
-                  <button onClick={() => { navigator.clipboard.writeText(profile.riot_id!); toast.success("Copiado!"); }} className="p-2 text-muted-foreground transition-colors hover:text-primary">
+                  <button onClick={() => { navigator.clipboard.writeText(profile.riot_id!); toast.success("Copiado!"); }} className="p-2 text-muted-foreground transition-colors hover:text-primary" aria-label="Copiar Riot ID">
                     <Copy className="h-4 w-4" />
                   </button>
                 </div>
@@ -315,6 +316,6 @@ const ProfileCard = () => {
         )}
     </motion.div>
   );
-};
+}
 
 export default ProfileCard;

@@ -1,67 +1,17 @@
-import { useEffect, useState } from "react";
-import { useSearchParams } from "react-router-dom";
 import { Users, ArrowLeft } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import FriendsSidebar from "@/components/FriendsSidebar";
 import ChatPanel from "@/components/ChatPanel";
-import { useChat } from "@/hooks/useChat";
-import { useFriendRequests } from "@/hooks/useFriendRequests";
+import { useChatScreen } from "@/pages/Chat.hooks";
 
-const Chat = () => {
-  const [searchParams, setSearchParams] = useSearchParams();
-  const [showSidebar, setShowSidebar] = useState(true);
+function Chat() {
   const {
     conversations, friends, activeConversation, setActiveConversation,
     messages, sendMessage, loading, deleteConversation, removeFriend,
-    blockUser, openConversationWithFriend,
-    refreshFriends, refreshConversations,
-  } = useChat();
-
-  const {
-    receivedRequests, sendRequest, acceptRequest, declineRequest,
-    hasPendingRequestTo, pendingCount, refreshRequests,
-  } = useFriendRequests();
-
-  useEffect(() => {
-    const convoId = searchParams.get("convo");
-    if (convoId && conversations.some((c) => c.id === convoId)) {
-      setActiveConversation(convoId);
-      setSearchParams({}, { replace: true });
-    }
-  }, [searchParams, conversations, setActiveConversation, setSearchParams]);
-
-  // On mobile, when a conversation is selected, hide sidebar
-  const handleSelectConversation = (id: string) => {
-    setActiveConversation(id);
-    // Hide sidebar on mobile
-    if (window.innerWidth < 768) {
-      setShowSidebar(false);
-    }
-  };
-
-  const handleBackToSidebar = () => {
-    setShowSidebar(true);
-    setActiveConversation(null);
-  };
-
-  const activeConvo = conversations.find((c) => c.id === activeConversation);
-  const otherUsername = activeConvo?.otherProfile?.username ?? undefined;
-  const otherDiscord = activeConvo?.otherProfile?.discord_username ?? undefined;
-  const otherLastSeen = activeConvo?.otherProfile?.last_seen ?? null;
-  const otherUserId = activeConvo?.otherProfile?.user_id ?? undefined;
-
-  const isFriend = otherUserId
-    ? friends.some((f) => f.user1_id === otherUserId || f.user2_id === otherUserId)
-    : false;
-
-  const hasPendingRequest = otherUserId ? hasPendingRequestTo(otherUserId) : false;
-
-  const handleAcceptRequest = async (requestId: string, senderId: string) => {
-    await acceptRequest(requestId, senderId);
-    refreshRequests();
-    await refreshFriends();
-    await refreshConversations();
-  };
+    blockUser, showSidebar, setShowSidebar, selectConversation, openConversationWithFriend,
+    friendRequests, acceptRequest, otherUsername, otherDiscord, otherLastSeen,
+    otherUserId, isFriend, hasPendingRequest, backToSidebar,
+  } = useChatScreen();
 
   return (
     <div className="min-h-screen bg-background">
@@ -73,19 +23,16 @@ const Chat = () => {
             conversations={conversations}
             friends={friends}
             activeConversation={activeConversation}
-            onSelectConversation={handleSelectConversation}
+            onSelectConversation={selectConversation}
             onDeleteConversation={deleteConversation}
             onRemoveFriend={removeFriend}
-            onOpenConversation={(friendUserId) => {
-              openConversationWithFriend(friendUserId);
-              if (window.innerWidth < 768) setShowSidebar(false);
-            }}
+            onOpenConversation={openConversationWithFriend}
             onBlockUser={blockUser}
             loading={loading}
-            friendRequests={receivedRequests}
-            pendingRequestCount={pendingCount}
-            onAcceptRequest={handleAcceptRequest}
-            onDeclineRequest={declineRequest}
+            friendRequests={friendRequests.receivedRequests}
+            pendingRequestCount={friendRequests.pendingCount}
+            onAcceptRequest={acceptRequest}
+            onDeclineRequest={friendRequests.declineRequest}
           />
         </div>
 
@@ -94,7 +41,7 @@ const Chat = () => {
           {/* Mobile back button */}
           {activeConversation && (
             <button
-              onClick={handleBackToSidebar}
+              onClick={backToSidebar}
               className="md:hidden flex items-center gap-2 px-4 py-2 border-b border-border text-sm text-muted-foreground hover:text-foreground transition-colors"
             >
               <ArrowLeft className="h-4 w-4" />
@@ -111,7 +58,7 @@ const Chat = () => {
             otherUserId={otherUserId}
             isFriend={isFriend}
             hasPendingRequest={hasPendingRequest}
-            onSendFriendRequest={sendRequest}
+            onSendFriendRequest={friendRequests.sendRequest}
             onBlockUser={blockUser}
           />
         </div>
@@ -131,6 +78,6 @@ const Chat = () => {
       </div>
     </div>
   );
-};
+}
 
 export default Chat;

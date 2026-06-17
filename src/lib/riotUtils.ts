@@ -1,6 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import type { Tables } from "@/integrations/supabase/types";
-import type { ProfileRank, ResolvedRank } from "@/types/riot";
+import type { ProfileRank, RankedEntry } from "@/types/riot";
 
 export async function resolveProfileRank(profile: Tables<"profiles">): Promise<ProfileRank> {
   if (profile.riot_id) {
@@ -17,9 +17,9 @@ export async function resolveProfileRank(profile: Tables<"profiles">): Promise<P
       if (res.ok) {
         const data = await res.json();
         if (data.summoner?.ranked) {
-          const rank: ResolvedRank =
-            data.summoner.ranked.find((r: ResolvedRank) => r.queueType === "RANKED_SOLO_5x5") ??
-            data.summoner.ranked.find((r: ResolvedRank) => r.queueType === "RANKED_FLEX_SR") ??
+          const rank: RankedEntry | null =
+            data.summoner.ranked.find((r: RankedEntry) => r.queueType === "RANKED_SOLO_5x5") ??
+            data.summoner.ranked.find((r: RankedEntry) => r.queueType === "RANKED_FLEX_SR") ??
             null;
           if (rank) return { rank, source: "riot" };
         }
