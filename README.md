@@ -1,115 +1,110 @@
 # MatchGaming
 
-Plataforma de matchmaking social para jogadores de **League of Legends**. Encontre um parceiro compatível pelo elo, entre na fila, aceite o match e jogue junto — tudo dentro da plataforma.
+![React](https://img.shields.io/badge/React_18-20232A?style=flat&logo=react&logoColor=61DAFB)
+![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?style=flat&logo=typescript&logoColor=white)
+![Supabase](https://img.shields.io/badge/Supabase-3ECF8E?style=flat&logo=supabase&logoColor=white)
+![Framer Motion](https://img.shields.io/badge/Framer_Motion-0055FF?style=flat&logo=framer&logoColor=white)
+![TailwindCSS](https://img.shields.io/badge/Tailwind_CSS-38B2AC?style=flat&logo=tailwind-css&logoColor=white)
 
----
+> Social matchmaking platform for League of Legends players — find a compatible duo by rank, join the queue, accept the match, and play together.
 
-## Stack
+<!-- Add a screenshot or GIF here: ![MatchGaming Preview](docs/images/preview.png) -->
 
-| Camada | Tecnologia |
+## About
+
+MatchGaming is a full-featured matchmaking platform built with React, Supabase, and the Riot Games API. Users link their Riot account, set preferences (rank, role, game mode), and enter a real-time queue that matches them with compatible players. After a match is accepted, a live chat is created automatically.
+
+## Features
+
+- **Matchmaking queue** — Normal, ARAM, Solo/Duo, and Flex modes with rank and role compatibility. Strict phase (30s) with automatic expanded fallback
+- **Real-time chat** — Created automatically after a match is accepted via Supabase Realtime
+- **Riot API integration** — Rank, match history, champions, and mastery via Edge Functions
+- **Friends system** — Friend requests, online/offline status, match queue exclusions
+- **Complete profile** — Riot ID link, manual or API-synced rank, avatar, Discord tag
+- **Settings** — Light/dark theme, sound preferences, role preferences, block list, account export and deletion
+- **Session control** — Simultaneous session detection with takeover modal
+
+## Tech Stack
+
+| Layer | Technology |
 |---|---|
 | Framework | React 18 + TypeScript 5 |
 | Build | Vite 5 |
-| Estilização | Tailwind CSS 3 + shadcn/ui |
-| Animações | Framer Motion 11 |
-| Roteamento | React Router DOM 6 |
-| Estado servidor | TanStack Query v5 |
+| Styling | Tailwind CSS 3 + shadcn/ui |
+| Animations | Framer Motion 11 |
+| Routing | React Router DOM 6 |
+| Server state | TanStack Query v5 |
 | Backend | Supabase (Auth, Database, Realtime, Edge Functions) |
-| Formulários | React Hook Form + Zod |
-| Testes | Vitest + Playwright |
+| Forms | React Hook Form + Zod |
+| Unit tests | Vitest + Testing Library |
+| E2E tests | Playwright |
 
----
+## Getting Started
 
-## Pré-requisitos
+### Prerequisites
 
-- Node.js 18+ (ou Bun)
-- Conta e projeto no [Supabase](https://supabase.com)
+- Node.js 18+ or Bun
+- Supabase project
 
----
-
-## Configuração
-
-Clone o repositório e instale as dependências:
+### Installation
 
 ```bash
-git clone <repo-url>
+git clone https://github.com/kevinmistrele/game-wingman-buddy.git
 cd game-wingman-buddy
 npm install
 ```
 
-Crie o arquivo `.env` na raiz com as credenciais do seu projeto Supabase:
-
-```env
-VITE_SUPABASE_URL=https://<seu-projeto>.supabase.co
-VITE_SUPABASE_PUBLISHABLE_KEY=<sua-anon-key>
-VITE_SUPABASE_PROJECT_ID=<seu-project-id>
-```
-
----
-
-## Desenvolvimento
+### Environment Variables
 
 ```bash
-npm run dev       # servidor em http://localhost:5173
-npm run build     # build de produção
-npm run preview   # preview do build
-npm run lint      # ESLint
-npm run test      # testes unitários (Vitest)
-npm run test:watch
-npx playwright test   # testes e2e
+cp .env.example .env
 ```
 
----
+```env
+VITE_SUPABASE_URL=https://<your-project>.supabase.co
+VITE_SUPABASE_PUBLISHABLE_KEY=<your-anon-key>
+VITE_SUPABASE_PROJECT_ID=<your-project-id>
+```
 
-## Funcionalidades
+### Running
 
-- **Matchmaking** — fila por modo (Normal, ARAM, Solo/Duo, Flex) com compatibilidade de elo e função. Fase estrita (30s) e expandida com fallback automático.
-- **Chat em tempo real** — conversa criada automaticamente após match aceito via Supabase Realtime.
-- **Integração Riot API** — rank, histórico de partidas, campeões e maestria via Edge Function.
-- **Sistema de amigos** — pedidos, lista com status online/offline, exclusão da fila de matchmaking.
-- **Perfil completo** — Riot ID vinculado, elo manual ou via API, avatar, Discord tag.
-- **Configurações** — tema claro/escuro, sons, preferências de função, lista de bloqueados, exportação e exclusão de conta.
-- **Controle de sessão** — detecção de sessão simultânea com modal de takeover.
+```bash
+npm run dev           # dev server at http://localhost:5173
+npm run build         # production build
+npm run lint          # ESLint
+npm run test          # unit tests (Vitest)
+npx playwright test   # e2e tests
+```
 
----
-
-## Estrutura do Projeto
+## Project Structure
 
 ```
 src/
 ├── design-system/
-│   └── tokens/          # Fonte única de verdade para cores, tipografia, animações e efeitos
-├── components/          # Componentes reutilizáveis
-│   └── ui/              # Primitivos shadcn/ui
-├── contexts/            # AuthContext, ThemeContext
-├── hooks/               # useMatchmaking, useChat, useFriendRequests, useOnlineStatus
+│   └── tokens/       # Single source of truth for colors, typography, animations
+├── components/       # Reusable components
+│   └── ui/           # shadcn/ui primitives
+├── contexts/         # AuthContext, ThemeContext
+├── hooks/            # useMatchmaking, useChat, useFriendRequests, useOnlineStatus
 ├── integrations/
-│   └── supabase/        # Client e tipos gerados
-├── lib/                 # eloUtils, soundUtils, utils
-└── pages/               # Index, Auth, Matchmaking, Chat, Profile, Settings
+│   └── supabase/     # Client and generated types
+├── lib/              # eloUtils, soundUtils, utils
+└── pages/            # Index, Auth, Matchmaking, Chat, Profile, Settings
 ```
-
----
 
 ## Design System
 
-Os tokens do DS ficam em `src/design-system/tokens/` e são a fonte de verdade para todo o projeto:
+Tokens live in `src/design-system/tokens/` and are the single source of truth for the entire project, consumed directly by `tailwind.config.ts`:
 
 ```ts
 import { motionConfig, zIndex, tierColorValues } from '@/design-system/tokens'
 ```
 
-O `tailwind.config.ts` importa os tokens diretamente, expondo utilities como `text-tier-gold`, `bg-status-online`, `text-warning`, `z-modal`, entre outras.
+## Documentation
 
----
+- [`docs/PRODUCT.md`](docs/PRODUCT.md) — product vision, features, and user flows
+- [`docs/TECHNICAL.md`](docs/TECHNICAL.md) — architecture, database, hooks, and integrations
 
-## Documentação
+## Author
 
-- [`docs/PRODUCT.md`](docs/PRODUCT.md) — visão de produto, funcionalidades e fluxos de usuário
-- [`docs/TECHNICAL.md`](docs/TECHNICAL.md) — arquitetura, banco de dados, hooks e integrações
-
----
-
-## Licença
-
-Privado. Todos os direitos reservados.
+Made by [Kevin Mistrele](https://github.com/kevinmistrele)
